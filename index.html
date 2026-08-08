@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, python-инструмент, диаграммы последовательности и wiki.">
+<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, Python и TypeScript инструменты, диаграммы последовательности и wiki.">
 <meta property="og:title" content="Superpowers — архитектурный атлас">
-<meta property="og:description" content="Методология как исполняемый артефакт: 10 диаграмм, 5 секвенций, DDD-карта и 15 wiki-заметок по obra/superpowers.">
+<meta property="og:description" content="Методология как исполняемый артефакт: 11 диаграмм, 5 секвенций, DDD-карта и 16 wiki-заметок по obra/superpowers.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yunusovt983-art.github.io/superpowers/">
 <meta property="og:locale" content="ru_RU">
@@ -246,9 +246,10 @@
   <a href="#companion">08 · Companion</a>
   <a href="#codeview">09 · Код</a>
   <a href="#pytool">10 · Python</a>
-  <a href="#sequences">11 · Секвенции</a>
-  <a href="#takeaways-sec">12 · Выводы</a>
-  <a href="#wiki">13 · Wiki</a>
+  <a href="#tstool">11 · TypeScript</a>
+  <a href="#sequences">12 · Секвенции</a>
+  <a href="#takeaways-sec">13 · Выводы</a>
+  <a href="#wiki">14 · Wiki</a>
 </nav>
 <button id="theme-btn" title="Переключить тему" aria-label="Переключить светлую/тёмную тему">◐</button>
 
@@ -1020,8 +1021,37 @@ calculate_cost():                           calculate_cost():
   </div>
 </section>
 
+<section id="tstool">
+  <span class="secnum">11 · typescript-адаптер</span>
+  <h2>Pi-адаптер: тот же класс бага — только опаснее</h2>
+  <div class="prose">
+    <p>Единственный рантайм-TypeScript в проекте — <code>.pi/extensions/superpowers.ts</code>, третий механизм активации рядом с hook у Claude Code (рис. 2) и transform у OpenCode. Индексация нашла тот же анти-паттерн, что мы уже чинили в Python: молчаливое поглощение ошибки в коде, который является gateway ко всей системе скиллов.</p>
+  </div>
+  <figure>
+    <div class="panel">
+<pre>ДО                                          ПОСЛЕ
+try {                                       try {
+  readFileSync(bootstrapSkillPath)            readFileSync(bootstrapSkillPath)
+  cachedBootstrap = ...                       cachedBootstrap = ...
+} catch {                                   } catch (error) {
+  cachedBootstrap = null;   ← кэш навсегда    console.error(`failed to read
+  return null;                ↑ БЕЗ ЛОГА       bootstrap skill at ${path} --
+}                                                the skill system will not
+                                                 activate for this session`, error)
+одна гонка на старте сессии =                 cachedBootstrap = null;   ← кэш тот
+Superpowers молча выключается,                  же (context() бьёт много раз
+без единого следа в логах                       за ход) — но диагностика видна</pre>
+    </div>
+    <figcaption><span class="k">Рис. 11.</span> JS-близнец (<code>.opencode/plugins/superpowers.js</code>) не оборачивает <code>readFileSync</code> в try/catch вообще — ошибка «нечитаемого файла» там улетает наверх видимо. Pi-версия объективно тише умирала, чем её сестра, до этого фикса.</figcaption>
+  </figure>
+  <div class="prose">
+    <p><strong>Тест без риска для продакшн-файла:</strong> <code>bootstrapSkillPath</code> вычисляется от <code>import.meta.url</code> самого модуля — подменить путь параметром нельзя, а трогать реальный <code>skills/using-superpowers/SKILL.md</code> даже в try/finally слишком рискованно (от него зависит вся система). Решение: копировать неизменённый исходник в одноразовую temp-директорию, где файла скилла заведомо нет — <code>readFileSync</code> там гарантированно кинет ENOENT, реальный репозиторий не затрагивается ни на миллисекунду.</p>
+    <p><strong>Находка, которую не стал чинить сходу:</strong> этот файл никем не type-checked — нет <code>tsconfig.json</code>, host-пакет нигде не установлен, <code>.github/workflows/</code> вообще не существует. Node 22+ импортирует <code>.ts</code> через нативный type-stripping — это стирает аннотации типов, но не проверяет их. Единственная защита от регрессий — 7 поведенческих тестов. Вынесено как рекомендация мейнтейнерам, не как тихая правка: проект декларирует себя zero-dependency by design, добавление dev-тулинга — их звонок.</p>
+  </div>
+</section>
+
 <section id="sequences">
-  <span class="secnum">11 · динамика</span>
+  <span class="secnum">12 · динамика</span>
   <h2>Диаграммы последовательности</h2>
   <div class="prose">
     <p>Пять сценариев в терминальной нотации — от старта сессии до merge. Здесь видно то, что статические схемы не показывают: порядок сообщений, точки ожидания человека и содержимое контрактов между участниками.</p>
@@ -1315,7 +1345,7 @@ calculate_cost():                           calculate_cost():
 </section>
 
 <section class="takeaways" id="takeaways-sec">
-  <span class="secnum">12 · выводы</span>
+  <span class="secnum">13 · выводы</span>
   <h2>Что унести с собой</h2>
   <ol>
     <li><strong>Промпты — это софт.</strong> Версии, CI через evals, запрет правок без тестов, история создания. Формулировки скиллов — оттюненные веса, их не правят по вкусу.</li>
@@ -1328,7 +1358,7 @@ calculate_cost():                           calculate_cost():
 </section>
 
 <section id="wiki" class="wiki">
-  <span class="secnum">13 · база знаний</span>
+  <span class="secnum">14 · база знаний</span>
   <h2>Wiki: второй мозг проекта</h2>
   <div class="prose">
     <p>Atomic-заметки из <code>Wiki/</code> репозитория — каждая отвечает на один вопрос, все перекрёстно связаны. Порядок чтения с нуля: 00 → 05, дальше — по интересу.</p>
@@ -1629,6 +1659,25 @@ GENERIC ───── Харнесс-интеграция · Дистрибу�
         <li><strong>Golden-тест</strong> на 14 assertions в конвенции <code>test-sdd-workspace.sh</code>. Ключевая проверка регрессии: сессия с 82k cache-read токенов должна стоить &lt;$0.10 — вернётся плоский прайсинг, тест покраснеет.</li>
       </ul>
       <p><strong>Совместимость:</strong> скрипт уже дёргается из <code>test-subagent-driven-development-integration.sh</code> под <code>set -euo pipefail</code>. Новая версия — drop-in замена: тот же вызов, тот же exit 0 на успехе, проверено прогоном точно такого вызова плюс граничные случаи (пустой транскрипт, битые строки, отсутствующий файл).</p>
+    </div>
+  </details>
+
+  <details id="wiki-16">
+    <summary><span class="num">16</span>Pi-адаптер: тот же класс бага, что и в Python — только опаснее</summary>
+    <div class="note">
+      <p>Единственный рантайм-TypeScript в проекте — <code>.pi/extensions/superpowers.ts</code>, третий механизм активации рядом с hook у Claude Code и transform у OpenCode (см. <a href="#wiki-08">08</a>). Индексация нашла тот же анти-паттерн, что уже чинили в <a href="#wiki-15">15</a>: молчаливое поглощение ошибки в коде, который является gateway ко всей системе скиллов (визуально — рис. 11).</p>
+      <h4>Что было не так</h4>
+      <p><code>catch {}</code> глотал любую ошибку чтения — не только «файла нет», а вообще любую (гонка при обновлении плагина на диске, EACCES, что угодно) — и кэшировал <code>null</code> на весь процесс, без единого лога. Для файла, который сам является входной точкой ко всей системе скиллов (<a href="#wiki-02">02</a>), это значит: одна случайная гонка на старте сессии — и Superpowers молча выключается для всей Pi-сессии. Сравнение с JS-близнецом (<code>.opencode/plugins/superpowers.js</code>) показало асимметрию: там <code>readFileSync</code> не обёрнут в try/catch вообще — при нечитаемом файле ошибка улетает наверх видимо. Pi-версия объективно тише умирала.</p>
+      <h4>Что исправлено</h4>
+      <ul>
+        <li><code>catch {}</code> → <code>catch (error)</code> с <code>console.error</code>, сообщающим путь к файлу и то, что система скиллов не активируется для этой сессии.</li>
+        <li>Кэширование неудачи оставлено (<code>context()</code> может сработать много раз за один ход агента, без кэша ошибка спамила бы лог) — но теперь диагностика видна один раз, а не тонет молча.</li>
+        <li>Добавлен комментарий-обоснование кэша, симметричный тому, что уже есть у JS-близнеца (issue #1202).</li>
+      </ul>
+      <h4>Тест без риска для продакшн-файла</h4>
+      <p><code>bootstrapSkillPath</code> вычисляется от <code>import.meta.url</code> самого модуля — подменить путь параметром нельзя, а трогать реальный <code>skills/using-superpowers/SKILL.md</code> даже в try/finally слишком рискованно. Решение: копировать неизменённый исходник в одноразовую temp-директорию, где файла скилла заведомо нет — <code>readFileSync</code> там гарантированно кинет ENOENT, реальный репозиторий не затрагивается ни на миллисекунду.</p>
+      <h4>Находка, которую не стал чинить сходу</h4>
+      <p>Этот файл никем не type-checked: нет <code>tsconfig.json</code>, host-пакет <code>@earendil-works/pi-coding-agent</code> нигде не установлен, <code>.github/workflows/</code> вообще не существует в репо. Node 22+ импортирует <code>.ts</code> через нативный type-stripping — это стирает аннотации типов, но не проверяет их. Единственная защита от регрессий — 7 поведенческих тестов. Вынесено как рекомендация мейнтейнерам: проект декларирует себя zero-dependency by design, добавление dev-тулинга для type-check — их решение, не тихая правка.</p>
     </div>
   </details>
 </section>
