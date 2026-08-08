@@ -2,7 +2,13 @@
 <html lang="ru">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, data lifecycle, диаграммы последовательности и wiki.">
+<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, диаграммы последовательности и wiki.">
+<meta property="og:title" content="Superpowers — архитектурный атлас">
+<meta property="og:description" content="Методология как исполняемый артефакт: 9 диаграмм, 5 секвенций, DDD-карта и 15 wiki-заметок по obra/superpowers.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://yunusovt983-art.github.io/superpowers/">
+<meta property="og:locale" content="ru_RU">
+<meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
 <meta charset="utf-8">
 <title>Superpowers — архитектурный атлас</title>
@@ -180,9 +186,71 @@
     margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line);
     font-family: var(--mono); font-size: 12px; color: var(--muted);
   }
+
+  nav.toc {
+    position: fixed; top: 90px; left: max(14px, calc(50% - 490px - 190px));
+    width: 165px; display: none; font-family: var(--mono); font-size: 11.5px;
+    line-height: 2; z-index: 5;
+  }
+  @media (min-width: 1400px) { nav.toc { display: block; } }
+  nav.toc a { display: block; color: var(--muted); text-decoration: none; padding: 0 8px; border-left: 2px solid var(--line); }
+  nav.toc a:hover { color: var(--accent); border-left-color: var(--accent); }
+  nav.toc .toc-t { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+
+  #theme-btn {
+    position: fixed; right: 18px; bottom: 18px; z-index: 9;
+    width: 40px; height: 40px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    font-size: 17px; cursor: pointer; line-height: 1;
+  }
+  #theme-btn:hover { border-color: var(--accent); }
+  #theme-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  svg a { cursor: pointer; }
+  svg a:hover .b { stroke: var(--accent); stroke-width: 1.8; }
+  svg a:hover text { fill: var(--accent); }
+
+  .figanchor { color: inherit; text-decoration: none; }
+  .figanchor:hover { color: var(--accent); }
+
+  #wiki-search {
+    width: 100%; max-width: 460px; margin: 6px 0 14px; padding: 9px 14px;
+    font-family: var(--mono); font-size: 13px; color: var(--ink);
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+  }
+  #wiki-search:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    html { scroll-behavior: smooth; }
+  }
+  @media print {
+    nav.toc, #theme-btn, #wiki-search { display: none !important; }
+    .panel { overflow: visible; border-color: #999; }
+    .panel svg { min-width: 0; }
+    .panel pre { font-size: 9px; }
+    section { break-inside: avoid-page; }
+    .wiki details { border-color: #999; }
+  }
 </style>
 </head>
 <body>
+<nav class="toc" aria-label="Оглавление">
+  <div class="toc-t">Атлас</div>
+  <a href="#hld">01 · HLD</a>
+  <a href="#bootstrap">02 · Активация</a>
+  <a href="#workflow">03 · Сага</a>
+  <a href="#sdd">04 · SDD</a>
+  <a href="#fixloop">05 · Fix loop</a>
+  <a href="#ddd">06 · DDD</a>
+  <a href="#deployment">07 · Deployment</a>
+  <a href="#companion">08 · Companion</a>
+  <a href="#codeview">09 · Код</a>
+  <a href="#sequences">10 · Секвенции</a>
+  <a href="#takeaways-sec">11 · Выводы</a>
+  <a href="#wiki">12 · Wiki</a>
+</nav>
+<button id="theme-btn" title="Переключить тему" aria-label="Переключить светлую/тёмную тему">◐</button>
+
 <div class="wrap">
 
 <header class="masthead">
@@ -194,7 +262,8 @@
 <div class="facts">
   <span>скиллов <b>14</b></span>
   <span>харнессов <b>11</b></span>
-  <span>обязательного кода в ядре <b>0 строк</b></span>
+  <span>обязательного кода <b>0 строк</b></span>
+  <span>опционального кода <b>~10k строк</b></span>
   <span>rejection rate PR <b>94%</b></span>
   <span>гейтов человека <b>5</b></span>
 </div>
@@ -225,22 +294,22 @@
 
       <rect x="20" y="134" width="900" height="106" rx="4" class="band"/>
       <text x="36" y="156" class="tag">АДАПТЕРЫ — ports &amp; adapters, тонкие</text>
-      <rect x="40"  y="176" width="116" height="44" rx="3" class="b"/><text x="98"  y="202" text-anchor="middle" class="sub">.claude-plugin</text>
-      <rect x="164" y="176" width="116" height="44" rx="3" class="b"/><text x="222" y="202" text-anchor="middle" class="sub">.codex-plugin</text>
-      <rect x="288" y="176" width="116" height="44" rx="3" class="b"/><text x="346" y="202" text-anchor="middle" class="sub">.cursor-plugin</text>
-      <rect x="412" y="176" width="116" height="44" rx="3" class="b"/><text x="470" y="202" text-anchor="middle" class="sub">.kimi-plugin</text>
-      <rect x="536" y="176" width="116" height="44" rx="3" class="b"/><text x="594" y="202" text-anchor="middle" class="sub">gemini-ext.json</text>
-      <rect x="660" y="176" width="116" height="44" rx="3" class="b"/><text x="718" y="202" text-anchor="middle" class="sub">.opencode / .js</text>
-      <rect x="784" y="176" width="116" height="44" rx="3" class="b"/><text x="842" y="202" text-anchor="middle" class="sub">.pi / .ts</text>
+      <a href="https://github.com/obra/superpowers/tree/main/.claude-plugin" target="_blank" rel="noopener"><rect x="40"  y="176" width="116" height="44" rx="3" class="b"/><text x="98"  y="202" text-anchor="middle" class="sub">.claude-plugin</text></a>
+      <a href="https://github.com/obra/superpowers/tree/main/.codex-plugin" target="_blank" rel="noopener"><rect x="164" y="176" width="116" height="44" rx="3" class="b"/><text x="222" y="202" text-anchor="middle" class="sub">.codex-plugin</text></a>
+      <a href="https://github.com/obra/superpowers/tree/main/.cursor-plugin" target="_blank" rel="noopener"><rect x="288" y="176" width="116" height="44" rx="3" class="b"/><text x="346" y="202" text-anchor="middle" class="sub">.cursor-plugin</text></a>
+      <a href="https://github.com/obra/superpowers/tree/main/.kimi-plugin" target="_blank" rel="noopener"><rect x="412" y="176" width="116" height="44" rx="3" class="b"/><text x="470" y="202" text-anchor="middle" class="sub">.kimi-plugin</text></a>
+      <a href="https://github.com/obra/superpowers/blob/main/gemini-extension.json" target="_blank" rel="noopener"><rect x="536" y="176" width="116" height="44" rx="3" class="b"/><text x="594" y="202" text-anchor="middle" class="sub">gemini-ext.json</text></a>
+      <a href="https://github.com/obra/superpowers/blob/main/.opencode/plugins/superpowers.js" target="_blank" rel="noopener"><rect x="660" y="176" width="116" height="44" rx="3" class="b"/><text x="718" y="202" text-anchor="middle" class="sub">.opencode / .js</text></a>
+      <a href="https://github.com/obra/superpowers/blob/main/.pi/extensions/superpowers.ts" target="_blank" rel="noopener"><rect x="784" y="176" width="116" height="44" rx="3" class="b"/><text x="842" y="202" text-anchor="middle" class="sub">.pi / .ts</text></a>
 
       <line x1="470" y1="240" x2="470" y2="270" class="edge" marker-end="url(#m1i)"/>
       <text x="482" y="260" class="elb">SessionStart hook · message transform · extension</text>
 
       <rect x="20" y="274" width="900" height="96" rx="4" class="band"/>
       <text x="36" y="296" class="tag">АКТИВАЦИЯ</text>
-      <rect x="40" y="308" width="310" height="50" rx="3" class="b"/>
+      <a href="https://github.com/obra/superpowers/blob/main/hooks/session-start" target="_blank" rel="noopener"><rect x="40" y="308" width="310" height="50" rx="3" class="b"/>
       <text x="195" y="328" text-anchor="middle" class="lbl">hooks/session-start (bash)</text>
-      <text x="195" y="346" text-anchor="middle" class="sub">читает SKILL.md → экранирует → JSON</text>
+      <text x="195" y="346" text-anchor="middle" class="sub">читает SKILL.md → экранирует → JSON</text></a>
       <line x1="350" y1="333" x2="392" y2="333" class="edge" marker-end="url(#m1i)"/>
       <rect x="396" y="292" width="250" height="24" rx="3" class="b dash"/><text x="521" y="308" text-anchor="middle" class="sub">Claude · hookSpecificOutput</text>
       <rect x="396" y="322" width="250" height="24" rx="3" class="b dash"/><text x="521" y="338" text-anchor="middle" class="sub">Cursor · additional_context</text>
@@ -252,37 +321,37 @@
 
       <rect x="20" y="404" width="900" height="150" rx="4" class="band"/>
       <text x="36" y="426" class="tag">ЯДРО — SKILLS/ · published language: markdown + frontmatter</text>
-      <rect x="40" y="438" width="190" height="52" rx="3" class="b acc"/>
+      <a href="https://github.com/obra/superpowers/blob/main/skills/using-superpowers/SKILL.md" target="_blank" rel="noopener"><rect x="40" y="438" width="190" height="52" rx="3" class="b acc"/>
       <text x="135" y="459" text-anchor="middle" class="lbl">using-superpowers</text>
-      <text x="135" y="477" text-anchor="middle" class="sub">gateway + Red Flags</text>
+      <text x="135" y="477" text-anchor="middle" class="sub">gateway + Red Flags</text></a>
       <line x1="230" y1="464" x2="248" y2="464" class="edge" marker-end="url(#m1i)"/>
-      <rect x="252" y="438" width="120" height="52" rx="3" class="b"/><text x="312" y="469" text-anchor="middle" class="sub">brainstorming</text>
+      <a href="https://github.com/obra/superpowers/tree/main/skills/brainstorming" target="_blank" rel="noopener"><rect x="252" y="438" width="120" height="52" rx="3" class="b"/><text x="312" y="469" text-anchor="middle" class="sub">brainstorming</text></a>
       <line x1="372" y1="464" x2="386" y2="464" class="edge" marker-end="url(#m1i)"/>
-      <rect x="390" y="438" width="120" height="52" rx="3" class="b"/><text x="450" y="469" text-anchor="middle" class="sub">writing-plans</text>
+      <a href="https://github.com/obra/superpowers/tree/main/skills/writing-plans" target="_blank" rel="noopener"><rect x="390" y="438" width="120" height="52" rx="3" class="b"/><text x="450" y="469" text-anchor="middle" class="sub">writing-plans</text></a>
       <line x1="510" y1="464" x2="524" y2="464" class="edge" marker-end="url(#m1i)"/>
-      <rect x="528" y="438" width="120" height="52" rx="3" class="b"/><text x="588" y="461" text-anchor="middle" class="sub">SDD / executing</text><text x="588" y="477" text-anchor="middle" class="sub">plans</text>
+      <a href="https://github.com/obra/superpowers/tree/main/skills/subagent-driven-development" target="_blank" rel="noopener"><rect x="528" y="438" width="120" height="52" rx="3" class="b"/><text x="588" y="461" text-anchor="middle" class="sub">SDD / executing</text><text x="588" y="477" text-anchor="middle" class="sub">plans</text></a>
       <line x1="648" y1="464" x2="662" y2="464" class="edge" marker-end="url(#m1i)"/>
-      <rect x="666" y="438" width="120" height="52" rx="3" class="b"/><text x="726" y="461" text-anchor="middle" class="sub">final review</text><text x="726" y="477" text-anchor="middle" class="sub">(сильная модель)</text>
+      <a href="https://github.com/obra/superpowers/blob/main/skills/requesting-code-review/code-reviewer.md" target="_blank" rel="noopener"><rect x="666" y="438" width="120" height="52" rx="3" class="b"/><text x="726" y="461" text-anchor="middle" class="sub">final review</text><text x="726" y="477" text-anchor="middle" class="sub">(сильная модель)</text></a>
       <line x1="786" y1="464" x2="800" y2="464" class="edge" marker-end="url(#m1i)"/>
-      <rect x="804" y="438" width="106" height="52" rx="3" class="b"/><text x="857" y="461" text-anchor="middle" class="sub">finishing-</text><text x="857" y="477" text-anchor="middle" class="sub">branch</text>
+      <a href="https://github.com/obra/superpowers/tree/main/skills/finishing-a-development-branch" target="_blank" rel="noopener"><rect x="804" y="438" width="106" height="52" rx="3" class="b"/><text x="857" y="461" text-anchor="middle" class="sub">finishing-</text><text x="857" y="477" text-anchor="middle" class="sub">branch</text></a>
 
       <text x="40" y="522" class="sub">сквозные:</text>
-      <rect x="130" y="504" width="150" height="30" rx="3" class="b dash"/><text x="205" y="523" text-anchor="middle" class="sub">TDD</text>
-      <rect x="290" y="504" width="170" height="30" rx="3" class="b dash"/><text x="375" y="523" text-anchor="middle" class="sub">code-review ×2</text>
-      <rect x="470" y="504" width="200" height="30" rx="3" class="b dash"/><text x="570" y="523" text-anchor="middle" class="sub">systematic-debugging</text>
-      <rect x="680" y="504" width="230" height="30" rx="3" class="b dash"/><text x="795" y="523" text-anchor="middle" class="sub">worktrees · verification</text>
+      <a href="https://github.com/obra/superpowers/tree/main/skills/test-driven-development" target="_blank" rel="noopener"><rect x="130" y="504" width="150" height="30" rx="3" class="b dash"/><text x="205" y="523" text-anchor="middle" class="sub">TDD</text></a>
+      <a href="https://github.com/obra/superpowers/tree/main/skills/requesting-code-review" target="_blank" rel="noopener"><rect x="290" y="504" width="170" height="30" rx="3" class="b dash"/><text x="375" y="523" text-anchor="middle" class="sub">code-review ×2</text></a>
+      <a href="https://github.com/obra/superpowers/tree/main/skills/systematic-debugging" target="_blank" rel="noopener"><rect x="470" y="504" width="200" height="30" rx="3" class="b dash"/><text x="570" y="523" text-anchor="middle" class="sub">systematic-debugging</text></a>
+      <a href="https://github.com/obra/superpowers/tree/main/skills/using-git-worktrees" target="_blank" rel="noopener"><rect x="680" y="504" width="230" height="30" rx="3" class="b dash"/><text x="795" y="523" text-anchor="middle" class="sub">worktrees · verification</text></a>
 
       <line x1="470" y1="614" x2="470" y2="558" class="edge" marker-end="url(#m1i)"/>
       <text x="482" y="586" class="elb">evals гейтят каждое изменение ядра</text>
 
       <rect x="20" y="618" width="900" height="0" class="band" style="display:none"/>
-      <rect x="40" y="614" width="400" height="36" rx="3" class="b"/>
-      <text x="240" y="637" text-anchor="middle" class="sub">tests/ — инфраструктура плагина</text>
-      <rect x="480" y="614" width="420" height="36" rx="3" class="b"/>
-      <text x="690" y="637" text-anchor="middle" class="sub">superpowers-evals — drill + LLM-судья, реальные tmux-сессии</text>
+      <a href="https://github.com/obra/superpowers/tree/main/tests" target="_blank" rel="noopener"><rect x="40" y="614" width="400" height="36" rx="3" class="b"/>
+      <text x="240" y="637" text-anchor="middle" class="sub">tests/ — инфраструктура плагина</text></a>
+      <a href="https://github.com/prime-radiant-inc/superpowers-evals" target="_blank" rel="noopener"><rect x="480" y="614" width="420" height="36" rx="3" class="b"/>
+      <text x="690" y="637" text-anchor="middle" class="sub">superpowers-evals — drill + LLM-судья, реальные tmux-сессии</text></a>
     </svg>
     </div>
-    <figcaption><span class="k">Рис. 1.</span> Слои системы. <span class="sw acc"></span>оранжевое — критический путь активации: без инъекции gateway-скилла ядро — «мёртвый груз на диске». Убери этот слой — и всё, что ниже, перестаёт вызываться.</figcaption>
+    <figcaption><span class="k">Рис. 1.</span> Слои системы. <span class="sw acc"></span>оранжевое — критический путь активации: без инъекции gateway-скилла ядро — «мёртвый груз на диске». Боксы кликабельны — ведут в исходники на GitHub.</figcaption>
   </figure>
   <figure>
     <div class="panel">
@@ -826,8 +895,102 @@
   </figure>
 </section>
 
+<section id="companion">
+  <span class="secnum">08 · опциональный контур</span>
+  <h2>Visual Companion: единственный сервер в проекте</h2>
+  <div class="prose">
+    <p>Слепая зона большинства описаний Superpowers: рядом с «ядром из чистого markdown» живёт полноценный веб-сервер — 723-строчный <a href="https://github.com/obra/superpowers/blob/main/skills/brainstorming/scripts/server.cjs" target="_blank" rel="noopener">server.cjs</a> для показа мокапов в браузере во время brainstorming. Вместе с клиентом и девятью тест-файлами это ~35% всего кода проекта. Контур строго опционален: агент предлагает его только когда вопрос «понятнее показать, чем описать», и запускает только после согласия человека.</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 400" role="img" aria-label="Архитектура visual companion: агент пишет HTML-экраны на диск, сервер следит за директорией и рассылает reload по WebSocket, браузер переподключается с backoff">
+      <defs>
+        <marker id="m9i" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-ink"/></marker>
+        <marker id="m9a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-acc"/></marker>
+        <marker id="m9f" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-flw"/></marker>
+      </defs>
+
+      <rect x="30" y="60" width="180" height="70" rx="3" class="b"/>
+      <text x="120" y="88" text-anchor="middle" class="lbl">Агент</text>
+      <text x="120" y="106" text-anchor="middle" class="sub">brainstorming skill</text>
+
+      <line x1="210" y1="95" x2="266" y2="95" class="edge flw" marker-end="url(#m9f)"/>
+      <text x="214" y="85" class="elb flw">пишет экраны</text>
+
+      <rect x="270" y="60" width="180" height="70" rx="3" class="b dash"/>
+      <text x="360" y="84" text-anchor="middle" class="sub">session dir</text>
+      <text x="360" y="100" text-anchor="middle" class="sub">screen-*.html</text>
+      <text x="360" y="116" text-anchor="middle" class="sub">/tmp или .superpowers/</text>
+
+      <line x1="360" y1="130" x2="360" y2="176" class="edge" marker-end="url(#m9i)"/>
+      <text x="372" y="158" class="elb">fs.watch: новый файл / overwrite</text>
+
+      <a href="https://github.com/obra/superpowers/blob/main/skills/brainstorming/scripts/server.cjs" target="_blank" rel="noopener"><rect x="240" y="180" width="240" height="110" rx="3" class="b acc"/>
+      <text x="360" y="204" text-anchor="middle" class="lbl">server.cjs · 723 строки</text>
+      <text x="360" y="224" text-anchor="middle" class="sub">http 127.0.0.1:&lt;random high port&gt;</text>
+      <text x="360" y="240" text-anchor="middle" class="sub">auth: token → query key → cookie</text>
+      <text x="360" y="256" text-anchor="middle" class="sub">port+token персистятся (restart = та же вкладка)</text>
+      <text x="360" y="272" text-anchor="middle" class="sub">idle timeout 4 часа</text></a>
+
+      <line x1="480" y1="215" x2="646" y2="215" class="edge flw" marker-end="url(#m9f)"/>
+      <text x="492" y="205" class="elb flw">WS broadcast: reload</text>
+      <line x1="646" y1="245" x2="480" y2="245" class="edge" marker-end="url(#m9i)"/>
+      <text x="492" y="262" class="elb">GET /?key=&lt;token&gt; · WS reconnect</text>
+
+      <a href="https://github.com/obra/superpowers/blob/main/skills/brainstorming/scripts/helper.js" target="_blank" rel="noopener"><rect x="650" y="170" width="260" height="120" rx="3" class="b"/>
+      <text x="780" y="194" text-anchor="middle" class="lbl">браузер человека</text>
+      <text x="780" y="214" text-anchor="middle" class="sub">frame-template.html + helper.js</text>
+      <text x="780" y="230" text-anchor="middle" class="sub">reconnect backoff 500ms → ×2 → 30s</text>
+      <text x="780" y="246" text-anchor="middle" class="sub">«paused»-оверлей после 15s разрыва</text>
+      <text x="780" y="262" text-anchor="middle" class="sub">мокапы · диаграммы · сравнения</text></a>
+
+      <rect x="240" y="330" width="440" height="44" rx="3" class="b dash"/>
+      <text x="460" y="348" text-anchor="middle" class="sub">телеметрия: логотип с primeradiant.com + версия — единственный</text>
+      <text x="460" y="364" text-anchor="middle" class="sub">внешний запрос всей системы · opt-out: 3 env-переменные</text>
+      <line x1="360" y1="290" x2="360" y2="326" class="edge acc ret" marker-end="url(#m9a)"/>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 9.</span> Транспорт экранов — файловая система, как и в SDD (рис. 4): агент пишет HTML на диск, сервер только следит и оповещает. <span class="sw flw"></span>teal — поток контента; сервер никогда не получает контент по сети от агента. Auth-токен защищает localhost-порт от чужих вкладок; телеметрия отключается <code>SUPERPOWERS_DISABLE_TELEMETRY</code>.</figcaption>
+  </figure>
+</section>
+
+<section id="codeview">
+  <span class="secnum">09 · код проекта</span>
+  <h2>Code view: ~10k строк вокруг markdown-ядра</h2>
+  <div class="prose">
+    <p>Инвентарь исполняемого кода. Паттерн один и тот же: код никогда не принимает решений за агента — он готовит файлы, следит за директориями и переносит байты. Все решения остаются в markdown.</p>
+  </div>
+  <table class="mini">
+    <tr><th>компонент</th><th>строк</th><th>что делает</th></tr>
+    <tr><td><a href="https://github.com/obra/superpowers/tree/main/skills/brainstorming/scripts" target="_blank" rel="noopener">brainstorm server</a></td><td>~950</td><td>server.cjs + helper.js + шаблон: WS-показ мокапов (рис. 9)</td></tr>
+    <tr><td><a href="https://github.com/obra/superpowers/tree/main/scripts" target="_blank" rel="noopener">дистрибуция</a></td><td>~1050</td><td>sync/package codex-плагина, bump-version каскадом по манифестам</td></tr>
+    <tr><td><a href="https://github.com/obra/superpowers/tree/main/skills/subagent-driven-development/scripts" target="_blank" rel="noopener">SDD-скрипты</a></td><td>135</td><td>task-brief (awk-парсер плана) · review-package · sdd-workspace</td></tr>
+    <tr><td><a href="https://github.com/obra/superpowers/tree/main/hooks" target="_blank" rel="noopener">активация</a></td><td>96</td><td>session-start + полиглот run-hook.cmd</td></tr>
+    <tr><td>адаптеры</td><td>~320</td><td>.opencode/superpowers.js · .pi/superpowers.ts</td></tr>
+    <tr><td><a href="https://github.com/obra/superpowers/tree/main/tests" target="_blank" rel="noopener">тесты</a></td><td>~6600</td><td>13 групп: от WS-протокола до прогонов триггеринга на haiku</td></tr>
+  </table>
+  <div class="prose">
+    <p><strong>Жемчужина №1 — полиглот <a href="https://github.com/obra/superpowers/blob/main/hooks/run-hook.cmd" target="_blank" rel="noopener">run-hook.cmd</a>.</strong> Один файл — одновременно валидный cmd-батник и bash-скрипт: для bash всё тело батника — heredoc-комментарий, для cmd.exe строка <code>: &lt;&lt; 'CMDBLOCK'</code> — мусор, который он молча пропускает. Windows ищет Git-bash по стандартным путям и тихо выходит, если его нет — плагин деградирует без ошибки, теряя только инъекцию.</p>
+  </div>
+  <figure>
+    <div class="panel">
+<pre>: &lt;&lt; 'CMDBLOCK'          ← bash: начало heredoc-комментария; cmd: no-op мусор
+@echo off                 ← видит только cmd.exe
+if exist "C:\Program Files\Git\bin\bash.exe" (
+    "...bash.exe" "%HOOK_DIR%%~1" %2 ...   ← Windows вызывает bash сам
+)
+exit /b 0                 ← нет bash — тихая деградация, не ошибка
+CMDBLOCK                  ← bash: конец «комментария», дальше обычный скрипт</pre>
+    </div>
+    <figcaption>Один файл обслуживает обе ОС, потому что расширения <code>.sh</code> ломали автодетект Claude Code на Windows — хуки намеренно безрасширенные.</figcaption>
+  </figure>
+  <div class="prose">
+    <p><strong>Жемчужина №2 — <a href="https://github.com/obra/superpowers/blob/main/skills/subagent-driven-development/scripts/task-brief" target="_blank" rel="noopener">task-brief</a>:</strong> 15-строчный awk-парсер вырезает задачу N из плана по заголовку <code>Task N</code>, отслеживая code-fences, чтобы «Task» внутри примеров кода не считался заголовком. Именно этот скрипт делает возможной файловую шину рис. 4 — текст задачи не проходит через контекст контроллера.</p>
+  </div>
+</section>
+
 <section id="sequences">
-  <span class="secnum">08 · динамика</span>
+  <span class="secnum">10 · динамика</span>
   <h2>Диаграммы последовательности</h2>
   <div class="prose">
     <p>Пять сценариев в терминальной нотации — от старта сессии до merge. Здесь видно то, что статические схемы не показывают: порядок сообщений, точки ожидания человека и содержимое контрактов между участниками.</p>
@@ -1120,8 +1283,8 @@
   </figure>
 </section>
 
-<section class="takeaways">
-  <span class="secnum">09 · выводы</span>
+<section class="takeaways" id="takeaways-sec">
+  <span class="secnum">11 · выводы</span>
   <h2>Что унести с собой</h2>
   <ol>
     <li><strong>Промпты — это софт.</strong> Версии, CI через evals, запрет правок без тестов, история создания. Формулировки скиллов — оттюненные веса, их не правят по вкусу.</li>
@@ -1134,11 +1297,12 @@
 </section>
 
 <section id="wiki" class="wiki">
-  <span class="secnum">10 · база знаний</span>
+  <span class="secnum">12 · база знаний</span>
   <h2>Wiki: второй мозг проекта</h2>
   <div class="prose">
-    <p>Пятнадцать atomic-заметок из <code>Wiki/</code> репозитория — каждая отвечает на один вопрос, все перекрёстно связаны. Порядок чтения с нуля: 00 → 05, дальше — по интересу.</p>
+    <p>Atomic-заметки из <code>Wiki/</code> репозитория — каждая отвечает на один вопрос, все перекрёстно связаны. Порядок чтения с нуля: 00 → 05, дальше — по интересу.</p>
   </div>
+  <input id="wiki-search" type="search" placeholder="поиск по заметкам…" aria-label="Поиск по заметкам wiki">
 
   <details id="wiki-00" open>
     <summary><span class="num">00</span>TL;DR — весь проект в 10 предложениях</summary>
@@ -1401,12 +1565,86 @@ GENERIC ───── Харнесс-интеграция · Дистрибу�
       </ol>
     </div>
   </details>
+
+  <details id="wiki-14">
+    <summary><span class="num">14</span>Visual Companion: сервер внутри markdown-проекта</summary>
+    <div class="note">
+      <p>Опровержение собственного мифа: «zero-dependency ядро из чистых данных» соседствует с самым большим кодовым артефактом проекта — Node-сервером на 723 строки (<code>skills/brainstorming/scripts/server.cjs</code>) плюс клиент <code>helper.js</code> и 9 тест-файлов (~35% всего кода). Точная формула: <em>ноль обязательного кода</em> — companion строго опционален и запускается только с согласия человека.</p>
+      <h4>Механика (рис. 9 атласа)</h4>
+      <ul>
+        <li><strong>Транспорт — файловая система</strong>, как и в SDD: агент пишет <code>screen-*.html</code> в session-директорию, сервер ловит их через <code>fs.watch</code> и рассылает браузеру <code>reload</code> по WebSocket. Контент никогда не идёт от агента по сети.</li>
+        <li><strong>Auth</strong>: токен → query key → cookie (имя куки привязано к порту), timing-safe сравнение. Порт и токен персистятся — рестарт сервера переиспользует их, и открытая вкладка переживает рестарт.</li>
+        <li><strong>Устойчивость клиента</strong>: reconnect с экспоненциальным backoff 500ms→30s, «paused»-оверлей после 15 секунд разрыва.</li>
+        <li><strong>Телеметрия</strong> — логотип с primeradiant.com с версией в URL: единственный внешний запрос всей системы. Opt-out: <code>SUPERPOWERS_DISABLE_TELEMETRY</code>, <code>DISABLE_TELEMETRY</code>, <code>CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC</code>.</li>
+      </ul>
+      <h4>Поведенческий слой</h4>
+      <p>Скилл brainstorming жёстко регулирует использование: предлагать только just-in-time (первый реально визуальный вопрос, не раньше), отдельным сообщением, и решать per-question — «вопрос о UI-теме ≠ визуальный вопрос». Тот же приём поимённого запрета соблазнов, что и в <a href="#wiki-10">10</a>.</p>
+    </div>
+  </details>
 </section>
 
 <footer class="colophon">
-  Источник: github.com/obra/superpowers · v6.2.0 · Jesse Vincent / Prime Radiant · разбор: DDD-анализ + HLD + секвенции, полные заметки — в Wiki/ репозитория
+  Источник: <a href="https://github.com/obra/superpowers">github.com/obra/superpowers</a> · v6.2.0 · Jesse Vincent / Prime Radiant · разбор: DDD-анализ + HLD + секвенции, полные заметки — в Wiki/ репозитория
 </footer>
 
 </div>
+
+<script>
+(function () {
+  // Переключатель темы: auto → dark → light → auto (persist в localStorage)
+  var root = document.documentElement, btn = document.getElementById('theme-btn');
+  var KEY = 'atlas-theme';
+  function apply(mode) {
+    if (mode === 'dark' || mode === 'light') root.setAttribute('data-theme', mode);
+    else root.removeAttribute('data-theme');
+    if (btn) btn.textContent = mode === 'dark' ? '☾' : mode === 'light' ? '☀' : '◐';
+  }
+  var saved = null;
+  try { saved = localStorage.getItem(KEY); } catch (e) {}
+  apply(saved);
+  if (btn) btn.addEventListener('click', function () {
+    var cur = null;
+    try { cur = localStorage.getItem(KEY); } catch (e) {}
+    var next = cur === 'dark' ? 'light' : cur === 'light' ? null : 'dark';
+    try { next ? localStorage.setItem(KEY, next) : localStorage.removeItem(KEY); } catch (e) {}
+    apply(next);
+  });
+
+  // Якоря рисунков: id на каждую figure + кликабельный «Рис. N.»
+  document.querySelectorAll('figure').forEach(function (fig, i) {
+    if (!fig.id) fig.id = 'fig-' + (i + 1);
+    var k = fig.querySelector('figcaption .k');
+    if (k && !k.querySelector('a')) {
+      var a = document.createElement('a');
+      a.className = 'figanchor'; a.href = '#' + fig.id; a.textContent = k.textContent;
+      k.textContent = ''; k.appendChild(a);
+    }
+  });
+
+  // Поиск по wiki-заметкам
+  var q = document.getElementById('wiki-search');
+  if (q) q.addEventListener('input', function () {
+    var s = q.value.trim().toLowerCase();
+    document.querySelectorAll('#wiki details').forEach(function (d) {
+      var hit = !s || d.textContent.toLowerCase().indexOf(s) !== -1;
+      d.style.display = hit ? '' : 'none';
+      if (s && hit) d.open = true;
+    });
+  });
+
+  // Печать: раскрыть все заметки, потом вернуть как было
+  var openedForPrint = [];
+  window.addEventListener('beforeprint', function () {
+    openedForPrint = [];
+    document.querySelectorAll('#wiki details:not([open])').forEach(function (d) {
+      d.open = true; openedForPrint.push(d);
+    });
+  });
+  window.addEventListener('afterprint', function () {
+    openedForPrint.forEach(function (d) { d.open = false; });
+    openedForPrint = [];
+  });
+})();
+</script>
 </body>
 </html>
