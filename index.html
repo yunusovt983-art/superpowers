@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, диаграммы последовательности и wiki.">
+<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, python-инструмент, диаграммы последовательности и wiki.">
 <meta property="og:title" content="Superpowers — архитектурный атлас">
-<meta property="og:description" content="Методология как исполняемый артефакт: 9 диаграмм, 5 секвенций, DDD-карта и 15 wiki-заметок по obra/superpowers.">
+<meta property="og:description" content="Методология как исполняемый артефакт: 10 диаграмм, 5 секвенций, DDD-карта и 15 wiki-заметок по obra/superpowers.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yunusovt983-art.github.io/superpowers/">
 <meta property="og:locale" content="ru_RU">
@@ -245,9 +245,10 @@
   <a href="#deployment">07 · Deployment</a>
   <a href="#companion">08 · Companion</a>
   <a href="#codeview">09 · Код</a>
-  <a href="#sequences">10 · Секвенции</a>
-  <a href="#takeaways-sec">11 · Выводы</a>
-  <a href="#wiki">12 · Wiki</a>
+  <a href="#pytool">10 · Python</a>
+  <a href="#sequences">11 · Секвенции</a>
+  <a href="#takeaways-sec">12 · Выводы</a>
+  <a href="#wiki">13 · Wiki</a>
 </nav>
 <button id="theme-btn" title="Переключить тему" aria-label="Переключить светлую/тёмную тему">◐</button>
 
@@ -989,8 +990,38 @@ CMDBLOCK                  ← bash: конец «комментария», да�
   </div>
 </section>
 
+<section id="pytool">
+  <span class="secnum">10 · python-инструмент</span>
+  <h2>Token analyzer: чиним прибор, который меряет экономику</h2>
+  <div class="prose">
+    <p>Единственный Python-файл в проекте — <code>tests/claude-code/analyze-token-usage.py</code>. По статусу «утилита для тестов», по сути — единственный инструмент, численно проверяющий тезисы секций <a href="#deployment">07</a> и <a href="#wiki-07">wiki 06–07</a>: парсит JSONL-транскрипт сессии и раскладывает токены на контроллер и сабагентов.</p>
+    <p><strong>Что было не так:</strong> оригинал считал cache-токены по цене обычного input ($3/M). Реальный прайсинг: cache read = <strong>0.1×</strong> базовой ставки, cache write = <strong>1.25×</strong>. Сессии Claude Code на 90%+ состоят из cache reads — старая формула завышала стоимость на порядок. Прибор, созданный измерять экономику контекста, искажал главную статью расходов этой самой экономики.</p>
+  </div>
+  <figure>
+    <div class="panel">
+<pre>ДО                                          ПОСЛЕ
+calculate_cost():                           calculate_cost():
+  rate = $3/M (все токены одинаково)          rate_in, rate_out = tier_pricing(model)
+  cost = total_input * rate                   cost  = input      * rate_in
+                                               cost += cache_write * rate_in * 1.25
+  ⚠ cache read стоит как input (0.1x!)        cost += cache_read  * rate_in * 0.10  ← 10x дешевле
+  ⚠ один прайс на все модели                  cost += output      * rate_out
+                                               ⚠ модель — из message.model, по тирам
+
+фикстура: 82,850 cache-read токенов
+  ДО:    ~$0.25   (тот же прайс, что input)
+  ПОСЛЕ: ~$0.06   (правильный 0.1x множитель)  ← golden-тест проверяет именно это</pre>
+    </div>
+    <figcaption><span class="k">Рис. 10.</span> Регрессионный тест жёстко проверяет, что сессия с 82k cache-read токенов стоит дешевле $0.10 — если кто-то вернёт плоский прайсинг, тест покраснеет.</figcaption>
+  </figure>
+  <div class="prose">
+    <p><strong>Добавлено:</strong> метрики методологии (cache hit rate, cost-per-turn, доля контроллер/сабагенты — численное доказательство файловой шины), детектор dispatch-bloat (промпт диспетча &gt;20k символов — тот самый анти-паттерн «42k символов пасты» из SDD-скилла), взрослый CLI (<code>--json</code>, <code>--html</code>, <code>--by-model</code>, <code>--top N</code>), честный подсчёт битых строк на stderr вместо молчаливого <code>except: pass</code>, и golden-тест на 14 assertions в конвенции проекта.</p>
+    <p>Совместимость: скрипт уже дёргается из <code>test-subagent-driven-development-integration.sh</code> под <code>set -euo pipefail</code>. Новая версия — drop-in замена: тот же вызов, тот же exit 0 на успехе.</p>
+  </div>
+</section>
+
 <section id="sequences">
-  <span class="secnum">10 · динамика</span>
+  <span class="secnum">11 · динамика</span>
   <h2>Диаграммы последовательности</h2>
   <div class="prose">
     <p>Пять сценариев в терминальной нотации — от старта сессии до merge. Здесь видно то, что статические схемы не показывают: порядок сообщений, точки ожидания человека и содержимое контрактов между участниками.</p>
@@ -1284,7 +1315,7 @@ CMDBLOCK                  ← bash: конец «комментария», да�
 </section>
 
 <section class="takeaways" id="takeaways-sec">
-  <span class="secnum">11 · выводы</span>
+  <span class="secnum">12 · выводы</span>
   <h2>Что унести с собой</h2>
   <ol>
     <li><strong>Промпты — это софт.</strong> Версии, CI через evals, запрет правок без тестов, история создания. Формулировки скиллов — оттюненные веса, их не правят по вкусу.</li>
@@ -1297,7 +1328,7 @@ CMDBLOCK                  ← bash: конец «комментария», да�
 </section>
 
 <section id="wiki" class="wiki">
-  <span class="secnum">12 · база знаний</span>
+  <span class="secnum">13 · база знаний</span>
   <h2>Wiki: второй мозг проекта</h2>
   <div class="prose">
     <p>Atomic-заметки из <code>Wiki/</code> репозитория — каждая отвечает на один вопрос, все перекрёстно связаны. Порядок чтения с нуля: 00 → 05, дальше — по интересу.</p>
@@ -1579,6 +1610,25 @@ GENERIC ───── Харнесс-интеграция · Дистрибу�
       </ul>
       <h4>Поведенческий слой</h4>
       <p>Скилл brainstorming жёстко регулирует использование: предлагать только just-in-time (первый реально визуальный вопрос, не раньше), отдельным сообщением, и решать per-question — «вопрос о UI-теме ≠ визуальный вопрос». Тот же приём поимённого запрета соблазнов, что и в <a href="#wiki-10">10</a>.</p>
+    </div>
+  </details>
+
+  <details id="wiki-15">
+    <summary><span class="num">15</span>Token analyzer: чиним прибор, который меряет экономику</summary>
+    <div class="note">
+      <p>Единственный Python-файл проекта — <code>tests/claude-code/analyze-token-usage.py</code>. По статусу «утилита для тестов», по сути — единственный инструмент, численно проверяющий тезисы <a href="#wiki-06">06</a> и <a href="#wiki-07">07</a>: парсит JSONL-транскрипт сессии и раскладывает токены на контроллер и сабагентов (визуально — рис. 10).</p>
+      <h4>Что было не так</h4>
+      <p>Оригинал считал cache-токены по цене обычного input ($3/M). Реальный прайсинг Anthropic: cache read = <strong>0.1×</strong> базовой ставки, cache write = <strong>1.25×</strong>. Сессии Claude Code на 90%+ состоят из cache reads — старая формула завышала стоимость на порядок. Прибор, созданный измерять экономику контекста, искажал главную статью расходов этой самой экономики. Второй баг: один прайс на все агенты, хотя <code>message.model</code> есть в каждой строке транскрипта — при том, что вся секция Model Selection в SDD-скилле посвящена выбору модели по роли.</p>
+      <h4>Что исправлено</h4>
+      <ul>
+        <li><strong>Прайсинг по классам токенов</strong> и по тирам моделей (opus/sonnet/haiku, читается из <code>message.model</code>); оверрайд — <code>--price-input</code>/<code>--price-output</code> или <code>--pricing-file</code>.</li>
+        <li><strong>Метрики методологии</strong>: cache hit rate, cost-per-turn, доля контроллер/сабагенты (численное доказательство файловой шины из <a href="#wiki-04">04</a>/<a href="#wiki-06">06</a>), детектор dispatch-bloat (промпт диспетча &gt;20k символов — анти-паттерн «42k символов пасты» из SDD-скилла).</li>
+        <li><strong>Взрослый CLI</strong>: <code>--json</code>, <code>--html PATH</code>, <code>--by-model</code>, <code>--top N</code>, <code>--no-color</code> (уважает <code>NO_COLOR</code>).</li>
+        <li><strong>Честность вместо тишины</strong>: <code>except Exception: pass</code> заменён на подсчёт битых строк, репортится на stderr — stdout остаётся стабильным отчётом.</li>
+        <li><strong>Рефакторинг</strong>: <code>@dataclass Usage</code> с <code>__add__</code> убрал пятикратное дублирование; чистые функции прайсинга тестируются отдельно от парсинга.</li>
+        <li><strong>Golden-тест</strong> на 14 assertions в конвенции <code>test-sdd-workspace.sh</code>. Ключевая проверка регрессии: сессия с 82k cache-read токенов должна стоить &lt;$0.10 — вернётся плоский прайсинг, тест покраснеет.</li>
+      </ul>
+      <p><strong>Совместимость:</strong> скрипт уже дёргается из <code>test-subagent-driven-development-integration.sh</code> под <code>set -euo pipefail</code>. Новая версия — drop-in замена: тот же вызов, тот же exit 0 на успехе, проверено прогоном точно такого вызова плюс граничные случаи (пустой транскрипт, битые строки, отсутствующий файл).</p>
     </div>
   </details>
 </section>
