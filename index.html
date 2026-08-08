@@ -1,0 +1,1412 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, data lifecycle, диаграммы последовательности и wiki.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+<meta charset="utf-8">
+<title>Superpowers — архитектурный атлас</title>
+<style>
+  :root {
+    --bg: #F1F4F7;
+    --surface: #FFFFFF;
+    --ink: #1B2733;
+    --muted: #5C6E7E;
+    --line: #C6D2DD;
+    --line-soft: #DCE4EB;
+    --accent: #D9480F;
+    --accent-soft: #FBE8DF;
+    --flow: #0B7285;
+    --flow-soft: #E0F1F3;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --serif: Charter, "Iowan Old Style", Georgia, serif;
+    --sans: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #101820;
+      --surface: #17222D;
+      --ink: #E2EAF1;
+      --muted: #8DA2B4;
+      --line: #2C3D4D;
+      --line-soft: #22303E;
+      --accent: #FF8A3D;
+      --accent-soft: #3A2417;
+      --flow: #45C0D4;
+      --flow-soft: #123840;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #101820; --surface: #17222D; --ink: #E2EAF1; --muted: #8DA2B4;
+    --line: #2C3D4D; --line-soft: #22303E; --accent: #FF8A3D;
+    --accent-soft: #3A2417; --flow: #45C0D4; --flow-soft: #123840;
+  }
+  :root[data-theme="light"] {
+    --bg: #F1F4F7; --surface: #FFFFFF; --ink: #1B2733; --muted: #5C6E7E;
+    --line: #C6D2DD; --line-soft: #DCE4EB; --accent: #D9480F;
+    --accent-soft: #FBE8DF; --flow: #0B7285; --flow-soft: #E0F1F3;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--serif); font-size: 17px; line-height: 1.65;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 48px 24px 96px; }
+  .prose { max-width: 70ch; }
+
+  header.masthead { border-bottom: 2px solid var(--ink); padding-bottom: 28px; margin-bottom: 12px; }
+  .eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 14px;
+  }
+  h1 {
+    font-family: var(--sans); font-weight: 700; font-size: clamp(34px, 5.5vw, 54px);
+    line-height: 1.05; margin: 0 0 16px; letter-spacing: -.015em; text-wrap: balance;
+  }
+  .lede { font-size: 19px; max-width: 62ch; margin: 0; color: var(--ink); }
+  .lede em { color: var(--accent); font-style: normal; }
+
+  .facts {
+    display: flex; flex-wrap: wrap; gap: 0 36px; padding: 14px 0;
+    border-bottom: 1px solid var(--line); margin-bottom: 48px;
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+  }
+  .facts b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  section { margin-top: 64px; }
+  h2 {
+    font-family: var(--sans); font-weight: 700; font-size: 27px;
+    letter-spacing: -.01em; margin: 0 0 6px; text-wrap: balance;
+  }
+  .secnum {
+    font-family: var(--mono); font-size: 12px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent); display: block; margin-bottom: 10px;
+  }
+  p { margin: 14px 0; }
+  code { font-family: var(--mono); font-size: .85em; background: var(--line-soft); padding: 1px 5px; border-radius: 3px; }
+  a { color: var(--flow); text-underline-offset: 2px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  figure { margin: 28px 0 8px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 6px;
+    padding: 22px 18px 14px; overflow-x: auto;
+  }
+  .panel svg { display: block; min-width: 720px; max-width: 100%; height: auto; margin: 0 auto; }
+  figcaption {
+    font-family: var(--mono); font-size: 12.5px; color: var(--muted);
+    line-height: 1.6; margin-top: 10px; max-width: 88ch;
+  }
+  .panel pre {
+    margin: 0; font-family: var(--mono); font-size: 11.5px;
+    line-height: 1.42; color: var(--ink); tab-size: 4;
+  }
+  .panel pre b { font-weight: 600; color: var(--accent); }
+  figcaption .k { color: var(--ink); font-weight: 600; }
+  .sw { display: inline-block; width: 18px; height: 3px; vertical-align: middle; margin: 0 4px 2px 0; border-radius: 2px; }
+  .sw.acc { background: var(--accent); }
+  .sw.flw { background: var(--flow); }
+  .sw.ink { background: var(--muted); }
+
+  /* SVG vocabulary */
+  svg { color: var(--ink); }
+  svg .b   { fill: var(--surface); stroke: var(--muted); stroke-width: 1.2; }
+  svg .band{ fill: none; stroke: var(--line); stroke-width: 1.2; }
+  svg .bandfill { fill: var(--line-soft); opacity: .35; stroke: none; }
+  svg .b.acc { stroke: var(--accent); stroke-width: 1.6; }
+  svg .b.flw { stroke: var(--flow); fill: var(--flow-soft); }
+  svg .b.dash{ stroke-dasharray: 4 4; }
+  svg .lbl { font: 600 12.5px var(--mono); fill: var(--ink); }
+  svg .sub { font: 400 11px var(--mono); fill: var(--muted); }
+  svg .tag { font: 600 11px var(--mono); fill: var(--muted); letter-spacing: .12em; }
+  svg .elb { font: 500 11px var(--mono); fill: var(--muted); }
+  svg .elb.acc { fill: var(--accent); }
+  svg .elb.flw { fill: var(--flow); }
+  svg .edge { stroke: var(--muted); stroke-width: 1.4; fill: none; }
+  svg .edge.acc { stroke: var(--accent); stroke-width: 1.7; }
+  svg .edge.flw { stroke: var(--flow); stroke-width: 1.4; }
+  svg .edge.ret { stroke-dasharray: 5 4; }
+  svg .life { stroke: var(--line); stroke-width: 1; stroke-dasharray: 3 4; }
+  svg .gate { fill: var(--accent); }
+  svg .mk-ink { fill: var(--muted); }
+  svg .mk-acc { fill: var(--accent); }
+  svg .mk-flw { fill: var(--flow); }
+
+  table.mini {
+    border-collapse: collapse; font-size: 15px; margin: 18px 0; width: 100%;
+  }
+  table.mini th, table.mini td { border-top: 1px solid var(--line); padding: 8px 14px 8px 0; text-align: left; vertical-align: top; }
+  table.mini th { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border-top: none; }
+  table.mini td:first-child { font-family: var(--mono); font-size: 13.5px; white-space: nowrap; }
+
+  .takeaways { border-top: 2px solid var(--ink); margin-top: 72px; padding-top: 8px; }
+  .takeaways ol { padding-left: 22px; max-width: 70ch; }
+  .takeaways li { margin: 12px 0; }
+  .takeaways li::marker { font-family: var(--mono); color: var(--accent); font-weight: 600; }
+
+  .wiki details {
+    border: 1px solid var(--line); border-radius: 6px; background: var(--surface);
+    margin: 10px 0;
+  }
+  .wiki details[open] { border-color: var(--muted); }
+  .wiki summary {
+    cursor: pointer; padding: 12px 18px; font-family: var(--sans);
+    font-weight: 600; font-size: 16.5px; list-style-position: outside;
+  }
+  .wiki summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .wiki summary .num {
+    font-family: var(--mono); font-weight: 500; font-size: 12px;
+    color: var(--accent); margin-right: 10px; letter-spacing: .08em;
+  }
+  .wiki .note { padding: 2px 22px 18px; font-size: 16px; }
+  .wiki .note > :first-child { margin-top: 6px; }
+  .wiki .note h4 {
+    font-family: var(--sans); font-size: 15px; margin: 20px 0 6px;
+    letter-spacing: .01em;
+  }
+  .wiki .note pre {
+    background: var(--line-soft); border-radius: 4px; padding: 12px 14px;
+    overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.5;
+  }
+  .wiki .note ul, .wiki .note ol { padding-left: 22px; }
+  .wiki .note li { margin: 5px 0; }
+  .wiki .note blockquote {
+    margin: 12px 0; padding: 2px 16px; border-left: 3px solid var(--accent);
+    color: var(--muted); font-style: italic;
+  }
+
+  footer.colophon {
+    margin-top: 64px; padding-top: 16px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 12px; color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">obra/superpowers · v6.2.0 · архитектурный разбор</p>
+  <h1>Superpowers: методология как исполняемый артефакт</h1>
+  <p class="lede">Плагин, который превращает кодинг-агента в дисциплинированного инженера. Ядро — четырнадцать markdown-скиллов; вся архитектура подчинена двум ресурсам: <em>контекстному окну</em> и <em>доверию к процессу</em>.</p>
+</header>
+
+<div class="facts">
+  <span>скиллов <b>14</b></span>
+  <span>харнессов <b>11</b></span>
+  <span>обязательного кода в ядре <b>0 строк</b></span>
+  <span>rejection rate PR <b>94%</b></span>
+  <span>гейтов человека <b>5</b></span>
+</div>
+
+<section id="hld">
+  <span class="secnum">01 · система целиком</span>
+  <h2>HLD: пять слоёв, данные в ядре</h2>
+  <div class="prose">
+    <p>Ядро проекта — чистые данные: markdown-файлы со скиллами. Исполняемая логика вытеснена на периферию — один bash-хук активации и тонкие адаптеры под каждую платформу. Поэтому одна и та же библиотека работает в одиннадцати харнессах, а изменения ядра не требуют пересборки чего-либо.</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 660" role="img" aria-label="Пятислойная архитектура: дистрибуция, адаптеры, активация, ядро скиллов, контроль качества">
+      <defs>
+        <marker id="m1i" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-ink"/></marker>
+        <marker id="m1a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-acc"/></marker>
+      </defs>
+
+      <rect x="20" y="16" width="900" height="84" rx="4" class="band"/>
+      <text x="36" y="38" class="tag">ДИСТРИБУЦИЯ</text>
+      <rect x="40" y="48" width="420" height="40" rx="3" class="b"/>
+      <text x="250" y="72" text-anchor="middle" class="lbl">маркетплейсы: Claude · Codex · Cursor · Kimi …</text>
+      <rect x="480" y="48" width="420" height="40" rx="3" class="b"/>
+      <text x="690" y="72" text-anchor="middle" class="lbl">bump-version.sh → версия 6.2.0 во все манифесты</text>
+
+      <line x1="470" y1="100" x2="470" y2="130" class="edge" marker-end="url(#m1i)"/>
+      <text x="482" y="120" class="elb">install / update</text>
+
+      <rect x="20" y="134" width="900" height="106" rx="4" class="band"/>
+      <text x="36" y="156" class="tag">АДАПТЕРЫ — ports &amp; adapters, тонкие</text>
+      <rect x="40"  y="176" width="116" height="44" rx="3" class="b"/><text x="98"  y="202" text-anchor="middle" class="sub">.claude-plugin</text>
+      <rect x="164" y="176" width="116" height="44" rx="3" class="b"/><text x="222" y="202" text-anchor="middle" class="sub">.codex-plugin</text>
+      <rect x="288" y="176" width="116" height="44" rx="3" class="b"/><text x="346" y="202" text-anchor="middle" class="sub">.cursor-plugin</text>
+      <rect x="412" y="176" width="116" height="44" rx="3" class="b"/><text x="470" y="202" text-anchor="middle" class="sub">.kimi-plugin</text>
+      <rect x="536" y="176" width="116" height="44" rx="3" class="b"/><text x="594" y="202" text-anchor="middle" class="sub">gemini-ext.json</text>
+      <rect x="660" y="176" width="116" height="44" rx="3" class="b"/><text x="718" y="202" text-anchor="middle" class="sub">.opencode / .js</text>
+      <rect x="784" y="176" width="116" height="44" rx="3" class="b"/><text x="842" y="202" text-anchor="middle" class="sub">.pi / .ts</text>
+
+      <line x1="470" y1="240" x2="470" y2="270" class="edge" marker-end="url(#m1i)"/>
+      <text x="482" y="260" class="elb">SessionStart hook · message transform · extension</text>
+
+      <rect x="20" y="274" width="900" height="96" rx="4" class="band"/>
+      <text x="36" y="296" class="tag">АКТИВАЦИЯ</text>
+      <rect x="40" y="308" width="310" height="50" rx="3" class="b"/>
+      <text x="195" y="328" text-anchor="middle" class="lbl">hooks/session-start (bash)</text>
+      <text x="195" y="346" text-anchor="middle" class="sub">читает SKILL.md → экранирует → JSON</text>
+      <line x1="350" y1="333" x2="392" y2="333" class="edge" marker-end="url(#m1i)"/>
+      <rect x="396" y="292" width="250" height="24" rx="3" class="b dash"/><text x="521" y="308" text-anchor="middle" class="sub">Claude · hookSpecificOutput</text>
+      <rect x="396" y="322" width="250" height="24" rx="3" class="b dash"/><text x="521" y="338" text-anchor="middle" class="sub">Cursor · additional_context</text>
+      <rect x="660" y="292" width="240" height="24" rx="3" class="b dash"/><text x="780" y="308" text-anchor="middle" class="sub">Copilot/SDK · additionalContext</text>
+      <text x="660" y="340" class="sub">ветвление по env — анти-коррупционный слой</text>
+
+      <line x1="470" y1="370" x2="470" y2="400" class="edge acc" marker-end="url(#m1a)"/>
+      <text x="482" y="392" class="elb acc">инъекция using-superpowers · startup | clear | compact</text>
+
+      <rect x="20" y="404" width="900" height="150" rx="4" class="band"/>
+      <text x="36" y="426" class="tag">ЯДРО — SKILLS/ · published language: markdown + frontmatter</text>
+      <rect x="40" y="438" width="190" height="52" rx="3" class="b acc"/>
+      <text x="135" y="459" text-anchor="middle" class="lbl">using-superpowers</text>
+      <text x="135" y="477" text-anchor="middle" class="sub">gateway + Red Flags</text>
+      <line x1="230" y1="464" x2="248" y2="464" class="edge" marker-end="url(#m1i)"/>
+      <rect x="252" y="438" width="120" height="52" rx="3" class="b"/><text x="312" y="469" text-anchor="middle" class="sub">brainstorming</text>
+      <line x1="372" y1="464" x2="386" y2="464" class="edge" marker-end="url(#m1i)"/>
+      <rect x="390" y="438" width="120" height="52" rx="3" class="b"/><text x="450" y="469" text-anchor="middle" class="sub">writing-plans</text>
+      <line x1="510" y1="464" x2="524" y2="464" class="edge" marker-end="url(#m1i)"/>
+      <rect x="528" y="438" width="120" height="52" rx="3" class="b"/><text x="588" y="461" text-anchor="middle" class="sub">SDD / executing</text><text x="588" y="477" text-anchor="middle" class="sub">plans</text>
+      <line x1="648" y1="464" x2="662" y2="464" class="edge" marker-end="url(#m1i)"/>
+      <rect x="666" y="438" width="120" height="52" rx="3" class="b"/><text x="726" y="461" text-anchor="middle" class="sub">final review</text><text x="726" y="477" text-anchor="middle" class="sub">(сильная модель)</text>
+      <line x1="786" y1="464" x2="800" y2="464" class="edge" marker-end="url(#m1i)"/>
+      <rect x="804" y="438" width="106" height="52" rx="3" class="b"/><text x="857" y="461" text-anchor="middle" class="sub">finishing-</text><text x="857" y="477" text-anchor="middle" class="sub">branch</text>
+
+      <text x="40" y="522" class="sub">сквозные:</text>
+      <rect x="130" y="504" width="150" height="30" rx="3" class="b dash"/><text x="205" y="523" text-anchor="middle" class="sub">TDD</text>
+      <rect x="290" y="504" width="170" height="30" rx="3" class="b dash"/><text x="375" y="523" text-anchor="middle" class="sub">code-review ×2</text>
+      <rect x="470" y="504" width="200" height="30" rx="3" class="b dash"/><text x="570" y="523" text-anchor="middle" class="sub">systematic-debugging</text>
+      <rect x="680" y="504" width="230" height="30" rx="3" class="b dash"/><text x="795" y="523" text-anchor="middle" class="sub">worktrees · verification</text>
+
+      <line x1="470" y1="614" x2="470" y2="558" class="edge" marker-end="url(#m1i)"/>
+      <text x="482" y="586" class="elb">evals гейтят каждое изменение ядра</text>
+
+      <rect x="20" y="618" width="900" height="0" class="band" style="display:none"/>
+      <rect x="40" y="614" width="400" height="36" rx="3" class="b"/>
+      <text x="240" y="637" text-anchor="middle" class="sub">tests/ — инфраструктура плагина</text>
+      <rect x="480" y="614" width="420" height="36" rx="3" class="b"/>
+      <text x="690" y="637" text-anchor="middle" class="sub">superpowers-evals — drill + LLM-судья, реальные tmux-сессии</text>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 1.</span> Слои системы. <span class="sw acc"></span>оранжевое — критический путь активации: без инъекции gateway-скилла ядро — «мёртвый груз на диске». Убери этот слой — и всё, что ниже, перестаёт вызываться.</figcaption>
+  </figure>
+  <figure>
+    <div class="panel">
+<pre aria-label="HLD системы в ANSI-псевдографике: те же пять слоёв с детализацией per-task цикла">
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                        SUPERPOWERS v6.2.0 — HIGH-LEVEL DESIGN                       │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+  DISTRIBUTION LAYER (generic subdomain)
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  ┌───────────────────┐  ┌────────────────────┐  ┌───────────────────────────────┐   │
+│  │ Claude Plugin     │  │ Codex / Gemini /   │  │ scripts/                      │   │
+│  │ Marketplace       │  │ Cursor / Kimi / Pi │  │  bump-version.sh              │   │
+│  │ (official + obra) │  │ marketplaces       │  │  package-codex-plugin.sh      │   │
+│  └─────────┬─────────┘  └─────────┬──────────┘  └───────────────┬───────────────┘   │
+└────────────┼──────────────────────┼─────────────────────────────┼───────────────────┘
+             │  install / update    │                             │ single version
+             ▼                      ▼                             ▼ → all manifests
+  HARNESS ADAPTER LAYER (anti-corruption layer / conformist)
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌───────────┐  │
+│  │.claude-plugin│ │.codex-plugin │ │.cursor-plugin│ │  .opencode/  │ │   .pi/    │  │
+│  │ plugin.json  │ │ plugin.json  │ │ plugin.json  │ │superpowers.js│ │ super-    │  │
+│  │ hooks.json   │ │              │ │hooks-cursor  │ │ (msg trans-  │ │ powers.ts │  │
+│  │              │ │              │ │  .json       │ │  form + tool │ │(extension)│  │
+│  │              │ │              │ │              │ │  mapping)    │ │           │  │
+│  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘ └──────┬───────┘ └─────┬─────┘  │
+│         │  ┌─────────────┴────┐    ┌─────┴────────┐        │               │        │
+│         │  │ gemini-extension │    │ .kimi-plugin │        │               │        │
+│         │  │      .json       │    │ plugin.json  │        │               │        │
+│         │  └──────────────────┘    └──────────────┘        │               │        │
+└─────────┼──────────────────────────────────────────────────┼───────────────┼────────┘
+          │ SessionStart event                               │               │
+          ▼                                                  ▼               ▼
+  ACTIVATION LAYER (supporting subdomain — bootstrap context)
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│  hooks/run-hook.cmd ──▶ hooks/session-start (bash)                                  │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐  │
+│  │ 1. read  skills/using-superpowers/SKILL.md                                    │  │
+│  │ 2. escape → JSON                                                              │  │
+│  │ 3. emit per-platform format:            ┌ Claude:  hookSpecificOutput.*       │  │
+│  │    (ACL: env-var branching)  ───────────┼ Cursor:  additional_context         │  │
+│  │                                         └ Copilot: additionalContext          │  │
+│  └───────────────────────────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────┬──────────────────────────────────────────┘
+                                           │ <b>context injection («You have superpowers»)</b>
+                                           ▼
+  CORE DOMAIN — SKILLS LIBRARY  (published language: markdown + YAML frontmatter)
+┌─────────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                     │
+│   GATEWAY SKILL                    META                                             │
+│  ┌──────────────────┐   ┌────────────────────┐                                      │
+│  │ using-superpowers│   │  writing-skills    │◀──── customer–supplier ─── evals     │
+│  │ (Red Flags       │   │  (+ subagent       │                                      │
+│  │  policy table)   │   │   testing method)  │                                      │
+│  └────────┬─────────┘   └────────────────────┘                                      │
+│           │ dispatches by trigger                                                   │
+│           ▼                                                                         │
+│   WORKFLOW SAGA (основной процесс)                                                  │
+│  ┌────────────┐  ┌───────────┐  ┌─────────┐  ┌────────────────┐  ┌──────────────┐   │
+│  │brainstorm- │─▶│ using-git-│─▶│ writing-│─▶│ subagent-driven│─▶│ finishing-a- │   │
+│  │    ing     │  │ worktrees │  │  plans  │  │ -development   │  │ development- │   │
+│  │ (design    │  │ (isolated │  │ (tasks  │  │ ── OR ──       │  │   branch     │   │
+│  │  doc)      │  │  branch)  │  │ 2-5 min)│  │ executing-plans│  │ (merge/PR)   │   │
+│  └────────────┘  └───────────┘  └─────────┘  └───────┬────────┘  └──────────────┘   │
+│    events: DesignApproved ─▶ PlanWritten ─▶ TaskCompleted* ─▶ ReviewPassed          │
+│                                                      │                              │
+│   PER-TASK LOOP (внутри SDD)                         ▼                              │
+│  ┌───────────────────────────────────────────────────────────────────────────────┐  │
+│  │  ┌─────────────┐    ┌──────────────┐    ┌───────────────┐    ┌────────────┐   │  │
+│  │  │ Implementer │───▶│Task Reviewer │───▶│ fix rounds ≤5 │───▶│   LEDGER   │   │  │
+│  │  │  subagent   │    │ (spec+quality│    │ (R≥4: сильнее │    │ (event log)│   │  │
+│  │  │ (fresh ctx) │    │  two-stage)  │    │  модель)      │    │ append-only│   │  │
+│  │  └─────────────┘    └──────────────┘    └───────────────┘    └────────────┘   │  │
+│  └───────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                     │
+│   CROSS-CUTTING SKILLS (вызываются из любой фазы)                                   │
+│  ┌──────────────────┐ ┌────────────────────┐ ┌────────────────┐ ┌────────────────┐  │
+│  │ test-driven-     │ │ systematic-        │ │ requesting/    │ │ verification-  │  │
+│  │ development      │ │ debugging          │ │ receiving-     │ │ before-        │  │
+│  │ (RED-GREEN-      │ │ (4-phase root      │ │ code-review    │ │ completion     │  │
+│  │  REFACTOR)       │ │  cause)            │ │                │ │                │  │
+│  └──────────────────┘ └────────────────────┘ └────────────────┘ └────────────────┘  │
+│  ┌──────────────────────────────┐                                                   │
+│  │ dispatching-parallel-agents  │   aggregate = skill dir (SKILL.md + refs + bin)   │
+│  └──────────────────────────────┘   identity  = frontmatter `name`                  │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+                                           ▲
+                                           │ behavior verification
+  QA LAYER (supporting subdomain)          │
+┌──────────────────────────────────────────┴──────────────────────────────────────────┐
+│  tests/            — plugin infrastructure (per-harness shell/mjs tests)            │
+│  evals/ (external) — superpowers-evals: drill harness, real tmux sessions,          │
+│                      LLM verifier judges skill compliance                           │
+└─────────────────────────────────────────────────────────────────────────────────────┘
+
+  LEGEND:  ──▶ поток управления/данных    ◀── зависимость контекстов
+           ACL = anti-corruption layer    saga = долгоживущий процесс с компенсациями
+</pre>
+    </div>
+    <figcaption><span class="k">Рис. 1b.</span> Та же архитектура в ANSI-псевдографике — терминальная версия для чтения в моноширинном контексте. Дополняет рис. 1 детализацией: per-task цикл внутри SDD, событийная цепочка саги и meta-контур (writing-skills ← evals).</figcaption>
+  </figure>
+</section>
+
+<section id="bootstrap">
+  <span class="secnum">02 · механизм активации</span>
+  <h2>Bootstrap: как скиллы попадают в голову агента</h2>
+  <div class="prose">
+    <p>LLM не пойдёт искать скиллы сам. Поэтому на каждом старте сессии хук принудительно вливает в контекст полный текст <code>using-superpowers</code> — полиси с правилом «если есть хоть 1% шанс, что скилл применим, ты обязан его вызвать». Ключевая деталь — matcher включает <code>compact</code>: сжатие контекста стирает полиси, и хук инъецирует её заново.</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 400" role="img" aria-label="Секвенция активации: харнесс запускает session-start, тот читает SKILL.md, эмитит платформенный JSON, харнесс инъецирует контент в контекст агента">
+      <defs>
+        <marker id="m2i" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-ink"/></marker>
+        <marker id="m2a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-acc"/></marker>
+      </defs>
+
+      <rect x="40" y="18" width="160" height="34" rx="3" class="b"/><text x="120" y="39" text-anchor="middle" class="lbl">Харнесс</text>
+      <rect x="300" y="18" width="200" height="34" rx="3" class="b"/><text x="400" y="39" text-anchor="middle" class="lbl">hooks/session-start</text>
+      <rect x="580" y="18" width="140" height="34" rx="3" class="b"/><text x="650" y="39" text-anchor="middle" class="lbl">SKILL.md</text>
+      <rect x="770" y="18" width="160" height="34" rx="3" class="b"/><text x="850" y="39" text-anchor="middle" class="lbl">Контекст агента</text>
+
+      <line x1="120" y1="52" x2="120" y2="370" class="life"/>
+      <line x1="400" y1="52" x2="400" y2="370" class="life"/>
+      <line x1="650" y1="52" x2="650" y2="370" class="life"/>
+      <line x1="850" y1="52" x2="850" y2="370" class="life"/>
+
+      <text x="128" y="88" class="elb">SessionStart · matcher: startup | clear | <tspan class="elb acc">compact</tspan></text>
+      <line x1="120" y1="96" x2="396" y2="96" class="edge" marker-end="url(#m2i)"/>
+
+      <text x="408" y="128" class="elb">cat using-superpowers/SKILL.md</text>
+      <line x1="400" y1="136" x2="646" y2="136" class="edge" marker-end="url(#m2i)"/>
+      <text x="408" y="160" class="elb">контент</text>
+      <line x1="650" y1="168" x2="404" y2="168" class="edge ret" marker-end="url(#m2i)"/>
+
+      <rect x="290" y="188" width="220" height="34" rx="3" class="b dash"/>
+      <text x="400" y="209" text-anchor="middle" class="sub">escape → JSON · формат по env</text>
+
+      <text x="128" y="248" class="elb">JSON платформы: hookSpecificOutput | additional_context | additionalContext</text>
+      <line x1="400" y1="256" x2="124" y2="256" class="edge ret" marker-end="url(#m2i)"/>
+
+      <text x="128" y="288" class="elb acc">инъекция: «You have superpowers» + полный текст полиси</text>
+      <line x1="120" y1="296" x2="846" y2="296" class="edge acc" marker-end="url(#m2a)"/>
+
+      <rect x="480" y="322" width="420" height="52" rx="3" class="b dash"/>
+      <text x="500" y="343" class="sub">повтор на compact = восстановление полиси после сжатия;</text>
+      <text x="500" y="361" class="sub">парный механизм на стороне процесса — ledger (рис. 4)</text>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 2.</span> Один bash-скрипт обслуживает три протокола инъекции, ветвясь по переменным окружения — анти-коррупционный слой в 50 строк. Acceptance test интеграции: «Let's make a react todo list» обязан авто-триггернуть brainstorming до первой строчки кода.</figcaption>
+  </figure>
+</section>
+
+<section id="workflow">
+  <span class="secnum">03 · процесс</span>
+  <h2>Сага: от идеи до merge, пять гейтов человека</h2>
+  <div class="prose">
+    <p>Скиллы сцеплены в долгоживущий процесс: терминальное состояние одного — вход следующего. Brainstorming может вызвать только writing-plans — перепрыгнуть фазу нельзя. Человек появляется ровно в пяти точках; между ними агент работает автономно, и «Should I continue?» прямо запрещён.</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 310" role="img" aria-label="Цепочка фаз процесса с пятью гейтами человека и сквозными дисциплинами">
+      <defs>
+        <marker id="m3i" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-ink"/></marker>
+      </defs>
+
+      <rect x="30" y="70" width="150" height="56" rx="3" class="b"/>
+      <text x="105" y="93" text-anchor="middle" class="lbl">brainstorming</text>
+      <text x="105" y="111" text-anchor="middle" class="sub">спек → git</text>
+      <line x1="180" y1="98" x2="211" y2="98" class="edge" marker-end="url(#m3i)"/>
+      <path d="M197,90 L205,98 L197,106 L189,98 z" class="gate"/>
+      <text x="197" y="62" text-anchor="middle" class="elb acc">Г1 · Г2</text>
+      <text x="197" y="140" text-anchor="middle" class="sub">+ worktree</text>
+
+      <rect x="215" y="70" width="150" height="56" rx="3" class="b"/>
+      <text x="290" y="93" text-anchor="middle" class="lbl">writing-plans</text>
+      <text x="290" y="111" text-anchor="middle" class="sub">задачи 2–5 мин</text>
+      <line x1="365" y1="98" x2="396" y2="98" class="edge" marker-end="url(#m3i)"/>
+
+      <rect x="400" y="70" width="150" height="56" rx="3" class="b"/>
+      <text x="475" y="93" text-anchor="middle" class="lbl">SDD</text>
+      <text x="475" y="111" text-anchor="middle" class="sub">цикл задач · рис. 4–5</text>
+      <line x1="475" y1="126" x2="475" y2="146" class="edge"/>
+      <path d="M475,146 L483,154 L475,162 L467,154 z" class="gate"/>
+      <text x="475" y="180" text-anchor="middle" class="elb acc">Г3 · Г4</text>
+      <line x1="550" y1="98" x2="581" y2="98" class="edge" marker-end="url(#m3i)"/>
+
+      <rect x="585" y="70" width="150" height="56" rx="3" class="b"/>
+      <text x="660" y="93" text-anchor="middle" class="lbl">final review</text>
+      <text x="660" y="111" text-anchor="middle" class="sub">вся ветка · топ-модель</text>
+      <line x1="735" y1="98" x2="766" y2="98" class="edge" marker-end="url(#m3i)"/>
+
+      <rect x="770" y="70" width="150" height="56" rx="3" class="b"/>
+      <text x="845" y="93" text-anchor="middle" class="lbl">finishing-branch</text>
+      <text x="845" y="111" text-anchor="middle" class="sub">merge | PR | keep …</text>
+      <line x1="845" y1="126" x2="845" y2="146" class="edge"/>
+      <path d="M845,146 L853,154 L845,162 L837,154 z" class="gate"/>
+      <text x="845" y="180" text-anchor="middle" class="elb acc">Г5</text>
+
+      <text x="30" y="212" class="sub">Г1 одобрение дизайна · Г2 ревью записанного спека · Г3 рулинг «finding vs план» · Г4 BLOCKED-эскалация · Г5 судьба ветки</text>
+
+      <rect x="30" y="236" width="890" height="52" rx="3" class="b dash"/>
+      <text x="475" y="258" text-anchor="middle" class="sub">сквозные дисциплины: TDD (RED→GREEN→REFACTOR) внутри каждой задачи ·</text>
+      <text x="475" y="276" text-anchor="middle" class="sub">двухступенчатое ревью после каждой задачи · verification-before-completion</text>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 3.</span> <span class="sw acc"></span>ромбы — гейты человека, их ровно пять. Hard gate фазы дизайна: ни строчки кода до одобрения — «simple» проекты проходят тот же путь, потому что именно там непроверенные допущения стоят дороже всего.</figcaption>
+  </figure>
+</section>
+
+<section id="sdd">
+  <span class="secnum">04 · исполнение</span>
+  <h2>SDD: файловая шина вместо разговоров</h2>
+  <div class="prose">
+    <p>Всё, что попадает в промпт диспетча или ответ сабагента, остаётся в контексте контроллера до конца сессии и перечитывается на каждом ходу. Поэтому крупные артефакты — бриф, отчёт, ревью-пакет — текут через диск, а контроллер видит только пути и статусы длиной до пятнадцати строк. Ledger — append-only журнал — единственная память, переживающая compaction.</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 430" role="img" aria-label="Контроллер диспетчеризует имплементера и ревьюера; данные между ними текут через файлы на диске, контроллер получает только короткие статусы">
+      <defs>
+        <marker id="m4i" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-ink"/></marker>
+        <marker id="m4f" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-flw"/></marker>
+      </defs>
+
+      <rect x="370" y="24" width="220" height="60" rx="3" class="b"/>
+      <text x="480" y="48" text-anchor="middle" class="lbl">CONTROLLER</text>
+      <text x="480" y="66" text-anchor="middle" class="sub">чистый контекст · только координация</text>
+
+      <rect x="740" y="24" width="170" height="60" rx="3" class="b"/>
+      <text x="825" y="48" text-anchor="middle" class="lbl">ledger</text>
+      <text x="825" y="66" text-anchor="middle" class="sub">progress.md · append-only</text>
+      <line x1="590" y1="54" x2="736" y2="54" class="edge" marker-end="url(#m4i)"/>
+      <text x="612" y="46" class="elb">append: Task N complete</text>
+
+      <line x1="410" y1="84" x2="240" y2="146" class="edge" marker-end="url(#m4i)"/>
+      <text x="180" y="112" class="elb">dispatch: пути + явная модель</text>
+      <line x1="320" y1="150" x2="446" y2="88" class="edge ret" marker-end="url(#m4i)"/>
+      <text x="330" y="132" class="elb">≤15 строк: статус · коммиты · тесты</text>
+
+      <line x1="550" y1="84" x2="700" y2="146" class="edge" marker-end="url(#m4i)"/>
+      <text x="640" y="112" class="elb">dispatch ревью</text>
+      <line x1="640" y1="150" x2="516" y2="88" class="edge ret" marker-end="url(#m4i)"/>
+      <text x="500" y="132" class="elb">Spec ✅/❌ + findings</text>
+
+      <rect x="110" y="150" width="230" height="64" rx="3" class="b"/>
+      <text x="225" y="175" text-anchor="middle" class="lbl">IMPLEMENTER</text>
+      <text x="225" y="193" text-anchor="middle" class="sub">свежий контекст · TDD → commit</text>
+
+      <rect x="600" y="150" width="230" height="64" rx="3" class="b"/>
+      <text x="715" y="175" text-anchor="middle" class="lbl">TASK REVIEWER</text>
+      <text x="715" y="193" text-anchor="middle" class="sub">spec compliance + quality</text>
+
+      <rect x="60" y="286" width="820" height="110" rx="4" class="bandfill"/>
+      <rect x="60" y="286" width="820" height="110" rx="4" class="band" style="stroke-dasharray:5 5"/>
+      <text x="76" y="308" class="tag" style="fill:var(--flow)">ФАЙЛОВАЯ ШИНА — .superpowers/sdd/&lt;plan&gt;/</text>
+
+      <rect x="120" y="322" width="170" height="50" rx="3" class="b flw"/>
+      <text x="205" y="352" text-anchor="middle" class="sub">task-N-brief.md</text>
+      <rect x="400" y="322" width="170" height="50" rx="3" class="b flw"/>
+      <text x="485" y="352" text-anchor="middle" class="sub">task-N-report.md</text>
+      <rect x="670" y="322" width="180" height="50" rx="3" class="b flw"/>
+      <text x="760" y="352" text-anchor="middle" class="sub">review-package.md</text>
+
+      <line x1="180" y1="322" x2="192" y2="218" class="edge flw" marker-end="url(#m4f)"/>
+      <text x="96" y="266" class="elb flw">читает бриф</text>
+      <line x1="290" y1="214" x2="428" y2="318" class="edge flw" marker-end="url(#m4f)"/>
+      <text x="300" y="266" class="elb flw">пишет отчёт + fix-репорты</text>
+
+      <line x1="262" y1="322" x2="642" y2="218" class="edge flw" marker-end="url(#m4f)"/>
+      <line x1="520" y1="322" x2="694" y2="218" class="edge flw" marker-end="url(#m4f)"/>
+      <line x1="760" y1="322" x2="742" y2="218" class="edge flw" marker-end="url(#m4f)"/>
+      <text x="782" y="266" class="elb flw">3 файла — один Read</text>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 4.</span> <span class="sw flw"></span>teal — данные через диск; <span class="sw ink"></span>серое — управление. Бриф и пакет генерируют скиллы-скрипты (<code>task-brief</code>, <code>review-package</code>; диапазон диффа — от записанного BASE, не <code>HEAD~1</code>). Имплементеры никогда не параллелятся; контроллер никогда не фиксит сам.</figcaption>
+  </figure>
+</section>
+
+<section id="fixloop">
+  <span class="secnum">05 · отказоустойчивость</span>
+  <h2>Fix loop: пять раундов и предохранитель</h2>
+  <div class="prose">
+    <p>Ревью с findings запускает цикл: раунд = один fix-диспетч плюс одно скоупленное ре-ревью. Ре-ревьюер выносит вердикт только по списку findings и поломкам в fix-диффе — «гулять» по коду ему нельзя, иначе цикл не сойдётся никогда. Застрявший цикл — сигнал, что имплементер не видит собственную проблему: с четвёртого раунда его меняют на свежего с моделью на тир выше.</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 400" role="img" aria-label="Автомат fix loop: раунды 1–3 с оригинальным имплементером, 4–5 с эскалацией модели, на пятом раунде срабатывает breaker с адъюдикацией">
+      <defs>
+        <marker id="m5i" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-ink"/></marker>
+        <marker id="m5a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-acc"/></marker>
+      </defs>
+
+      <rect x="40" y="30" width="260" height="56" rx="3" class="b"/>
+      <text x="170" y="53" text-anchor="middle" class="lbl">триггер</text>
+      <text x="170" y="71" text-anchor="middle" class="sub">Spec ❌ · Critical/Important · ⚠️</text>
+
+      <line x1="170" y1="86" x2="170" y2="116" class="edge ret" marker-end="url(#m5i)"/>
+      <rect x="40" y="120" width="260" height="40" rx="3" class="b dash"/>
+      <text x="170" y="145" text-anchor="middle" class="sub">Minor → ledger (deferred), мимо цикла</text>
+
+      <line x1="300" y1="58" x2="356" y2="58" class="edge" marker-end="url(#m5i)"/>
+      <rect x="360" y="30" width="240" height="56" rx="3" class="b"/>
+      <text x="480" y="53" text-anchor="middle" class="lbl">раунды 1–3</text>
+      <text x="480" y="71" text-anchor="middle" class="sub">resume оригинального имплементера</text>
+
+      <line x1="600" y1="58" x2="676" y2="58" class="edge" marker-end="url(#m5i)"/>
+      <text x="606" y="48" class="elb">fix + тесты</text>
+      <rect x="680" y="30" width="220" height="56" rx="3" class="b"/>
+      <text x="790" y="53" text-anchor="middle" class="lbl">scoped re-review</text>
+      <text x="790" y="71" text-anchor="middle" class="sub">ADDRESSED / NOT + fix-дифф</text>
+
+      <line x1="790" y1="86" x2="790" y2="126" class="edge" marker-end="url(#m5i)"/>
+      <path d="M790,130 L862,164 L790,198 L718,164 z" fill="none" class="edge" style="stroke-width:1.2"/>
+      <text x="790" y="160" text-anchor="middle" class="sub">остались</text>
+      <text x="790" y="176" text-anchor="middle" class="sub">open?</text>
+
+      <path d="M718,164 L560,164 L560,204" class="edge" fill="none" marker-end="url(#m5i)"/>
+      <text x="576" y="156" class="elb">0 open → выход</text>
+      <rect x="440" y="208" width="240" height="44" rx="3" class="b"/>
+      <text x="560" y="235" text-anchor="middle" class="lbl">Task complete → ledger</text>
+
+      <path d="M718,150 L640,120 L600,86" class="edge ret" fill="none" marker-end="url(#m5i)"/>
+      <text x="560" y="112" class="elb">open · R&lt;3 — ещё раунд</text>
+
+      <line x1="790" y1="198" x2="790" y2="266" class="edge acc" marker-end="url(#m5a)"/>
+      <text x="800" y="240" class="elb acc">open · R≥3 — эскалация</text>
+      <rect x="620" y="270" width="290" height="56" rx="3" class="b"/>
+      <text x="765" y="293" text-anchor="middle" class="lbl">раунды 4–5</text>
+      <text x="765" y="311" text-anchor="middle" class="sub">свежий имплементер · модель на тир выше</text>
+      <path d="M650,270 L650,150 L680,86" class="edge" fill="none" marker-end="url(#m5i)"/>
+      <text x="536" y="188" class="elb">снова scoped re-review</text>
+
+      <path d="M620,312 L600,340 L560,340" class="edge acc" fill="none" marker-end="url(#m5a)"/>
+      <text x="606" y="360" class="elb acc">R=5, open &gt; 0</text>
+      <rect x="40" y="306" width="520" height="66" rx="3" class="b acc"/>
+      <text x="60" y="330" class="lbl">BREAKER — прекратить диспетчеризацию</text>
+      <text x="60" y="350" class="sub">адъюдикация каждого finding: park + ruling в ledger · спорное — тоже park</text>
+      <text x="60" y="366" class="sub">load-bearing → BLOCKED, стоп и отчёт человеку · silent discard запрещён</text>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 5.</span> Адъюдикация разрешена только на капе — раньше это pre-judging. Каждое решение — запись в ledger. Финальное ревью ветки получает одну fix-волну и одно ре-ревью; второй волны не бывает.</figcaption>
+  </figure>
+</section>
+
+<section id="ddd">
+  <span class="secnum">06 · доменная карта</span>
+  <h2>DDD: контексты и их отношения</h2>
+  <div class="prose">
+    <p>Домен проекта — не код, а управление поведением агента. Ядро говорит на published language (markdown + frontmatter), который обязаны понимать все потребители; адаптеры подчиняются API своих платформ; evals стоят к ядру в отношении customer–supplier — изменение скилла без before/after-доказательств не принимается.</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 260" role="img" aria-label="Карта ограниченных контекстов: харнессы, адаптеры-конформисты, ядро скиллов с published language, evals как customer-supplier, активационный ACL">
+      <defs>
+        <marker id="m6i" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-ink"/></marker>
+        <marker id="m6a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-acc"/></marker>
+      </defs>
+
+      <rect x="30" y="70" width="160" height="80" rx="3" class="b"/>
+      <text x="110" y="102" text-anchor="middle" class="lbl">Харнессы</text>
+      <text x="110" y="122" text-anchor="middle" class="sub">Claude · Codex · … ×11</text>
+
+      <line x1="250" y1="110" x2="194" y2="110" class="edge" marker-end="url(#m6i)"/>
+      <text x="222" y="98" text-anchor="middle" class="elb">conformist</text>
+
+      <rect x="254" y="70" width="170" height="80" rx="3" class="b"/>
+      <text x="339" y="102" text-anchor="middle" class="lbl">Адаптеры</text>
+      <text x="339" y="122" text-anchor="middle" class="sub">манифесты · js · ts</text>
+
+      <line x1="484" y1="110" x2="428" y2="110" class="edge" marker-end="url(#m6i)"/>
+      <text x="456" y="98" text-anchor="middle" class="elb">publ. lang.</text>
+
+      <rect x="488" y="60" width="240" height="100" rx="3" class="b acc"/>
+      <text x="608" y="94" text-anchor="middle" class="lbl">SKILLS CORE</text>
+      <text x="608" y="114" text-anchor="middle" class="sub">published language:</text>
+      <text x="608" y="132" text-anchor="middle" class="sub">markdown + frontmatter</text>
+
+      <line x1="788" y1="110" x2="732" y2="110" class="edge acc" marker-end="url(#m6a)"/>
+      <text x="760" y="98" text-anchor="middle" class="elb acc">гейт правок</text>
+
+      <rect x="792" y="70" width="130" height="80" rx="3" class="b"/>
+      <text x="857" y="102" text-anchor="middle" class="lbl">Evals</text>
+      <text x="857" y="122" text-anchor="middle" class="sub">customer–supplier</text>
+
+      <rect x="488" y="196" width="240" height="44" rx="3" class="b dash"/>
+      <text x="608" y="223" text-anchor="middle" class="sub">Activation ACL · 3 JSON-формата</text>
+      <line x1="608" y1="196" x2="608" y2="164" class="edge ret" marker-end="url(#m6i)"/>
+      <text x="620" y="184" class="elb">доставляет ядро в рантайм</text>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 6.</span> Слово «Skill» значит разное в контексте авторинга (исходник, который тюнят evals-ами) и в контексте рантайма (инструкция к исполнению) — классический признак границы bounded context.</figcaption>
+  </figure>
+
+  <table class="mini">
+    <tr><th>поддомен</th><th>тип</th><th>где живёт</th></tr>
+    <tr><td>skills + методология</td><td>core — конкурентное отличие</td><td><code>skills/</code>, 14 агрегатов</td></tr>
+    <tr><td>активация</td><td>supporting — доставка ядра</td><td><code>hooks/</code></td></tr>
+    <tr><td>QA / evals</td><td>supporting — верификация поведения</td><td><code>tests/</code> + superpowers-evals</td></tr>
+    <tr><td>интеграция харнессов</td><td>generic</td><td>адаптеры на периферии</td></tr>
+    <tr><td>дистрибуция</td><td>generic</td><td>маркетплейсы, <code>scripts/</code></td></tr>
+  </table>
+</section>
+
+<section id="deployment">
+  <span class="secnum">07 · размещение и данные</span>
+  <h2>Deployment: система живёт в трёх местах</h2>
+  <div class="prose">
+    <p>Ни одна из предыдущих схем не отвечала на практический вопрос «что где физически лежит». Ответ: система существует в трёх копиях — исходник на GitHub, установленная копия внутри харнесса и артефакты, которые агент порождает в проекте пользователя. У каждого места свой владелец и свой цикл обновления.</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 490" role="img" aria-label="Три места размещения: репозиторий плагина, машина пользователя с установленной копией и сессией агента, проект пользователя с артефактами">
+      <defs>
+        <marker id="m7i" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-ink"/></marker>
+        <marker id="m7a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-acc"/></marker>
+        <marker id="m7f" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-flw"/></marker>
+      </defs>
+
+      <rect x="20" y="40" width="270" height="400" rx="4" class="band"/>
+      <text x="36" y="30" class="tag">ИСТОЧНИК — GITHUB / MARKETPLACE</text>
+      <rect x="40" y="64" width="230" height="44" rx="3" class="b"/>
+      <text x="155" y="84" text-anchor="middle" class="lbl">obra/superpowers</text>
+      <text x="155" y="100" text-anchor="middle" class="sub">v6.2.0 · main = released</text>
+      <text x="56" y="146" class="sub">skills/        — 14 скиллов (данные)</text>
+      <text x="56" y="170" class="sub">hooks/         — активация</text>
+      <text x="56" y="194" class="sub">адаптеры       — ×11 платформ</text>
+      <text x="56" y="218" class="sub">scripts/       — версии, упаковка</text>
+      <text x="56" y="258" class="sub">владелец: мейнтейнеры</text>
+      <text x="56" y="276" class="sub">обновление: релизы (dev → main)</text>
+
+      <line x1="290" y1="86" x2="346" y2="86" class="edge" marker-end="url(#m7i)"/>
+      <text x="298" y="76" class="elb">install / update</text>
+
+      <rect x="350" y="40" width="270" height="400" rx="4" class="band"/>
+      <text x="366" y="30" class="tag">МАШИНА ПОЛЬЗОВАТЕЛЯ — ХАРНЕСС</text>
+      <rect x="370" y="64" width="230" height="76" rx="3" class="b"/>
+      <text x="485" y="88" text-anchor="middle" class="lbl">установленная копия</text>
+      <text x="485" y="106" text-anchor="middle" class="sub">plugin root · read-only</text>
+      <text x="485" y="122" text-anchor="middle" class="sub">обновляется часто автоматически</text>
+
+      <line x1="485" y1="140" x2="485" y2="188" class="edge acc" marker-end="url(#m7a)"/>
+      <text x="497" y="168" class="elb acc">SessionStart: инъекция bootstrap</text>
+
+      <rect x="370" y="192" width="230" height="120" rx="3" class="b acc"/>
+      <text x="485" y="218" text-anchor="middle" class="lbl">сессия агента</text>
+      <text x="485" y="238" text-anchor="middle" class="sub">контекст: полиси + name/description</text>
+      <text x="485" y="254" text-anchor="middle" class="sub">скиллов; полный текст — lazy</text>
+      <text x="485" y="274" text-anchor="middle" class="sub">эфемерна: живёт до конца сессии,</text>
+      <text x="485" y="290" text-anchor="middle" class="sub">память сжимается compaction-ом</text>
+      <text x="380" y="340" class="sub">владелец: пользователь + харнесс</text>
+
+      <line x1="600" y1="232" x2="656" y2="216" class="edge flw" marker-end="url(#m7f)"/>
+      <text x="588" y="200" class="elb flw">пишет артефакты</text>
+      <line x1="600" y1="290" x2="656" y2="318" class="edge" marker-end="url(#m7i)"/>
+      <text x="600" y="316" class="elb">работает в</text>
+
+      <rect x="660" y="40" width="260" height="400" rx="4" class="band"/>
+      <text x="676" y="30" class="tag">ПРОЕКТ ПОЛЬЗОВАТЕЛЯ — GIT</text>
+      <rect x="680" y="64" width="220" height="44" rx="3" class="b flw"/>
+      <text x="790" y="82" text-anchor="middle" class="sub">docs/superpowers/specs/</text>
+      <text x="790" y="99" text-anchor="middle" class="sub">дизайн-доки · коммитятся ✓</text>
+      <rect x="680" y="118" width="220" height="44" rx="3" class="b flw"/>
+      <text x="790" y="136" text-anchor="middle" class="sub">docs/superpowers/plans/</text>
+      <text x="790" y="153" text-anchor="middle" class="sub">планы · коммитятся ✓</text>
+      <rect x="680" y="172" width="220" height="84" rx="3" class="b dash"/>
+      <text x="790" y="192" text-anchor="middle" class="sub">.superpowers/sdd/&lt;plan&gt;/</text>
+      <text x="790" y="210" text-anchor="middle" class="sub">ledger · брифы · отчёты · пакеты</text>
+      <text x="790" y="228" text-anchor="middle" class="sub">git-ignored · эфемерно</text>
+      <text x="790" y="246" text-anchor="middle" class="elb acc">⚠ git clean -fdx уничтожит</text>
+      <rect x="680" y="266" width="220" height="60" rx="3" class="b"/>
+      <text x="790" y="290" text-anchor="middle" class="sub">git worktree · ветка фичи</text>
+      <text x="790" y="308" text-anchor="middle" class="sub">изолированная рабочая копия</text>
+      <text x="690" y="360" class="sub">владелец: пользователь</text>
+      <text x="690" y="378" class="sub">судьба: merge/PR → git history,</text>
+      <text x="690" y="396" class="sub">workspace удаляется после финала</text>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 7.</span> Deployment view. <span class="sw flw"></span>teal-рамки — то, что попадает в git проекта навсегда; пунктир — эфемерный workspace. Три копии обновляются независимо: релиз плагина не трогает проект, а артефакты процесса не покидают машину пользователя (кроме опционального telemetry-пиксела).</figcaption>
+  </figure>
+
+  <h2 style="margin-top:48px">Data lifecycle: что переживает что</h2>
+  <div class="prose">
+    <p>У каждого артефакта процесса — своя продолжительность жизни. Ключевой механизм: после чистого финального ревью workspace уничтожается (<code>rm -rf</code>), и единственной записью о работе остаётся git history — «the git history is the record now».</p>
+  </div>
+  <figure>
+    <div class="panel">
+    <svg viewBox="0 0 940 420" role="img" aria-label="Жизненный цикл артефактов по фазам процесса: спек и план живут в git навсегда, брифы, отчёты, пакеты и ledger уничтожаются после финального ревью, git history остаётся единственной записью">
+      <defs>
+        <marker id="m8f" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L8,4 L0,8 z" class="mk-flw"/></marker>
+      </defs>
+
+      <text x="297" y="36" text-anchor="middle" class="tag">ДИЗАЙН</text>
+      <text x="431" y="36" text-anchor="middle" class="tag">ПЛАН</text>
+      <text x="565" y="36" text-anchor="middle" class="tag">ЗАДАЧИ 1…N</text>
+      <text x="699" y="36" text-anchor="middle" class="tag">ФИНАЛЬНОЕ РЕВЬЮ</text>
+      <text x="833" y="36" text-anchor="middle" class="tag">ПОСЛЕ MERGE</text>
+      <line x1="364" y1="46" x2="364" y2="372" class="life"/>
+      <line x1="498" y1="46" x2="498" y2="372" class="life"/>
+      <line x1="632" y1="46" x2="632" y2="372" class="life"/>
+      <line x1="766" y1="46" x2="766" y2="372" class="life"/>
+
+      <text x="24" y="86" class="sub">спек (design doc)</text>
+      <rect x="280" y="78" width="596" height="8" rx="4" style="fill:var(--flow)"/>
+      <polygon points="880,74 898,82 880,90" style="fill:var(--flow)"/>
+
+      <text x="24" y="130" class="sub">план</text>
+      <rect x="400" y="122" width="476" height="8" rx="4" style="fill:var(--flow)"/>
+      <polygon points="880,118 898,126 880,134" style="fill:var(--flow)"/>
+
+      <text x="24" y="174" class="sub">task-N-brief.md</text>
+      <rect x="520" y="166" width="220" height="8" rx="4" style="fill:var(--muted)"/>
+      <line x1="742" y1="162" x2="756" y2="178" class="edge acc"/>
+      <line x1="742" y1="178" x2="756" y2="162" class="edge acc"/>
+
+      <text x="24" y="218" class="sub">task-N-report.md</text>
+      <rect x="520" y="210" width="220" height="8" rx="4" style="fill:var(--muted)"/>
+      <line x1="742" y1="206" x2="756" y2="222" class="edge acc"/>
+      <line x1="742" y1="222" x2="756" y2="206" class="edge acc"/>
+
+      <text x="24" y="262" class="sub">review-package.md</text>
+      <rect x="540" y="254" width="200" height="8" rx="4" style="fill:var(--muted)"/>
+      <line x1="742" y1="250" x2="756" y2="266" class="edge acc"/>
+      <line x1="742" y1="266" x2="756" y2="250" class="edge acc"/>
+
+      <text x="24" y="306" class="sub">ledger progress.md</text>
+      <rect x="505" y="298" width="235" height="8" rx="4" style="fill:var(--muted)"/>
+      <line x1="742" y1="294" x2="756" y2="310" class="edge acc"/>
+      <line x1="742" y1="310" x2="756" y2="294" class="edge acc"/>
+      <text x="510" y="290" class="elb">переживает compaction · истина мигрирует в git log</text>
+
+      <text x="24" y="350" class="sub">git history</text>
+      <rect x="280" y="341" width="596" height="10" rx="5" style="fill:var(--flow)"/>
+      <polygon points="880,336 900,346 880,356" style="fill:var(--flow)"/>
+      <text x="786" y="332" class="elb flw">«the record now»</text>
+
+      <text x="699" y="392" text-anchor="middle" class="elb acc">rm -rf workspace — после чистого финального ревью</text>
+    </svg>
+    </div>
+    <figcaption><span class="k">Рис. 8.</span> Жизненный цикл артефактов. <span class="sw flw"></span>teal — живёт в git навсегда (спек и план коммитятся в момент создания); <span class="sw ink"></span>серое — эфемерный workspace; <span class="sw acc"></span>× — точка уничтожения. Ledger — единственный workspace-артефакт с гарантией пережить compaction, но и он умирает вместе с workspace: его содержание к этому моменту продублировано коммитами.</figcaption>
+  </figure>
+</section>
+
+<section id="sequences">
+  <span class="secnum">08 · динамика</span>
+  <h2>Диаграммы последовательности</h2>
+  <div class="prose">
+    <p>Пять сценариев в терминальной нотации — от старта сессии до merge. Здесь видно то, что статические схемы не показывают: порядок сообщений, точки ожидания человека и содержимое контрактов между участниками.</p>
+  </div>
+
+  <figure>
+    <div class="panel">
+<pre aria-label="Секвенция активации: харнесс, лончер, bash-скрипт, файл скилла и агент">
+СД-1 · АКТИВАЦИЯ (BOOTSTRAP) — старт сессии
+
+┌─────────┐      ┌──────────────┐      ┌───────────────┐      ┌──────────────────┐      ┌─────────┐
+│ Harness │      │ run-hook.cmd │      │ session-start │      │ using-superpowers│      │  Agent  │
+│(Claude/ │      │  (launcher)  │      │    (bash)     │      │    /SKILL.md     │      │  (LLM)  │
+│ Cursor/…│      └──────┬───────┘      └───────┬───────┘      └────────┬─────────┘      └────┬────┘
+└────┬────┘             │                      │                       │                     │
+     │  SessionStart    │                      │                       │                     │
+     │  (startup|clear| │                      │                       │                     │
+     │   compact)       │                      │                       │                     │
+     │─────────────────▶│                      │                       │                     │
+     │                  │  exec session-start  │                       │                     │
+     │                  │─────────────────────▶│                       │                     │
+     │                  │                      │  cat SKILL.md         │                     │
+     │                  │                      │──────────────────────▶│                     │
+     │                  │                      │◀ ─ ─ ─ content ─ ─ ─ ─│                     │
+     │                  │                      │                       │                     │
+     │                  │                      ├──┐ escape_for_json()  │                     │
+     │                  │                      │◀─┘                    │                     │
+     │                  │                      │                       │                     │
+     │                  │                      ├──┐ detect platform    │                     │
+     │                  │                      │  │ (env: CURSOR_PLUGIN_ROOT?               │
+     │                  │                      │◀─┘  CLAUDE_PLUGIN_ROOT? COPILOT_CLI?)      │
+     │                  │                      │                       │                     │
+     │   JSON (формат зависит от платформы):   │                       │                     │
+     │   Claude → hookSpecificOutput.additionalContext                 │                     │
+     │   Cursor → additional_context           │                       │                     │
+     │   иначе  → additionalContext            │                       │                     │
+     │◀────────────────────────────────────────│                       │                     │
+     │                  │                      │                       │                     │
+     │  inject &lt;EXTREMELY_IMPORTANT&gt; You have superpowers… + текст скилла                    │
+     │───────────────────────────────────────────────────────────────────────────────────── ▶│
+     │                  │                      │                       │                     │
+     │                  │                      │            далее: агент ОБЯЗАН проверять    │
+     │                  │                      │            скиллы перед ЛЮБЫМ действием ────┤
+     │                  │                      │            (Red Flags policy активна)       │
+</pre>
+    </div>
+    <figcaption><span class="k">СД-1.</span> Детализация рис. 2. В OpenCode и Pi та же инъекция идёт другим портом — message transform / extension, — но контракт одинаков: контент gateway-скилла в контексте до первого ответа агента.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="panel">
+<pre aria-label="Секвенция фазы дизайна: диалог с человеком, два гейта, запись и коммит спека">
+СД-2 · ФАЗА ДИЗАЙНА — brainstorming → writing-plans
+
+┌───────────┐         ┌────────────┐        ┌──────────────┐       ┌───────────────┐
+│   Human   │         │   Agent    │        │  Filesystem  │       │      git      │
+│  Partner  │         │(controller)│        │ docs/…/specs │       │               │
+└─────┬─────┘         └─────┬──────┘        └──────┬───────┘       └───────┬───────┘
+      │  "Let's build X"    │                      │                       │
+      │────────────────────▶│                      │                       │
+      │                     ├──┐ Skill(brainstorming)                      │
+      │                     │◀─┘ ═══ HARD GATE: no code until approval ═══ │
+      │                     │                      │                       │
+      │                     │  explore context (files, docs, commits)      │
+      │                     │─────────────────────▶│                       │
+      │                     │                      │                       │
+      │   вопрос (ровно ОДИН за сообщение)         │                       │
+      │◀────────────────────│                      │                       │
+      │   ответ             │                      │                       │
+      │────────────────────▶│                      │                       │
+      │        ⟲ loop: пока цель/ограничения/критерии не ясны              │
+      │                     │                      │                       │
+      │   2-3 подхода + рекомендация               │                       │
+      │◀────────────────────│                      │                       │
+      │   выбор             │                      │                       │
+      │────────────────────▶│                      │                       │
+      │                     │                      │                       │
+      │   секция дизайна i  │                      │                       │
+      │◀────────────────────│                      │                       │
+      │   ok / правки       │                      │                       │
+      │────────────────────▶│    ⟲ по всем секциям (revise при "нет")      │
+      │                     │                      │                       │
+      │            ══ GATE 1: дизайн одобрен ══    │                       │
+      │                     │  write spec: YYYY-MM-DD-&lt;topic&gt;-design.md    │
+      │                     │─────────────────────▶│                       │
+      │                     │  commit spec         │                       │
+      │                     │──────────────────────────────────────────────▶
+      │                     ├──┐ self-review: placeholders? противоречия?  │
+      │                     │◀─┘ scope? двусмысленность? → fix inline      │
+      │                     │                      │                       │
+      │  "Spec written… please review"             │                       │
+      │◀────────────────────│                      │                       │
+      │  approved           │      (changes requested → перезапись спека ⟲)│
+      │────────────────────▶│                      │                       │
+      │                     │                      │                       │
+      │            ══ GATE 2: спек одобрен ══      │                       │
+      │                     ├──┐ Skill(writing-plans) — ЕДИНСТВЕННЫЙ       │
+      │                     │◀─┘ разрешённый следующий скилл               │
+      │                     │  план: задачи по 2-5 мин, точные пути,       │
+      │                     │  код, шаги верификации                       │
+</pre>
+    </div>
+    <figcaption><span class="k">СД-2.</span> Два человеческих гейта: устное одобрение дизайна по секциям и ревью записанного спека. Анти-паттерн «слишком просто для дизайна» заблокирован явно — процесс проходят даже config change.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="panel">
+<pre aria-label="Секвенция цикла одной задачи SDD: контроллер, скрипты, имплементер, ревьюер, ledger">
+СД-3 · SDD: ЦИКЛ ОДНОЙ ЗАДАЧИ — happy path + контракт статусов
+
+┌───────┐   ┌────────────┐   ┌─────────────┐  ┌────────────┐  ┌─────────────┐  ┌────────┐
+│ Human │   │ Controller │   │   scripts/  │  │ Implementer│  │    Task     │  │ Ledger │
+│Partner│   │  (session) │   │ (sdd-work-  │  │  subagent  │  │  Reviewer   │  │progress│
+│       │   │            │   │ space, task-│  │ (fresh ctx,│  │  subagent   │  │  .md   │
+│       │   │            │   │ brief, rev- │  │ cheap model│  │(mid-tier    │  │        │
+│       │   │            │   │ iew-package)│  │ if spec    │  │ model)      │  │        │
+└───┬───┘   └─────┬──────┘   └──────┬──────┘  │ complete)  │  └──────┬──────┘  └───┬────┘
+    │             │                 │         └─────┬──────┘         │             │
+    │             │ sdd-workspace PLAN_FILE         │                │             │
+    │             │────────────────▶│               │                │             │
+    │             │◀ workspace path ┤ (.superpowers/sdd/&lt;plan&gt;/)     │             │
+    │             │                 │               │                │             │
+    │             │ ledger есть? ────────────────────────────────────────────────▶ │
+    │             │◀─ "Task N: complete" строки = НЕ передиспетчеризовать ─────────┤
+    │             │                 │               │                │             │
+    │  конфликты плана (batch, если есть)           │                │             │
+    │◀────────────│                 │               │                │             │
+    │  рулинги    │                 │               │                │             │
+    │────────────▶│                 │               │                │             │
+    │             │                 │               │                │             │
+    │      ── для задачи N: ──      │               │                │             │
+    │             ├──┐ BASE = git rev-parse HEAD    │                │             │
+    │             │◀─┘              │               │                │             │
+    │             │ task-brief PLAN_FILE N          │                │             │
+    │             │────────────────▶│               │                │             │
+    │             │◀ brief path ────┤               │                │             │
+    │             │                 │               │                │             │
+    │             │  dispatch: brief path + report path + контекст   │             │
+    │             │  (модель — ЯВНО, по Model Selection)             │             │
+    │             │────────────────────────────────▶│                │             │
+    │             │                 │               │                │             │
+    │             │◀── вопросы? ────────────────────┤                │             │
+    │             │─── ответы ─────────────────────▶│  (опционально) │             │
+    │             │                 │               │                │             │
+    │             │                 │               ├──┐ TDD: RED→GREEN→REFACTOR   │
+    │             │                 │               │  │ commit, self-review       │
+    │             │                 │               │◀─┘ full report → REPORT_FILE │
+    │             │                 │               │                │             │
+    │             │◀ status: DONE | DONE_W_CONCERNS | NEEDS_CONTEXT | BLOCKED      │
+    │             │  + commits + test summary (≤15 строк)            │             │
+    │             │                 │               │                │             │
+    │             │  ┌─ alt: NEEDS_CONTEXT → дать контекст, re-dispatch ─┐         │
+    │             │  ├─ alt: BLOCKED → контекст? модель↑? разбить?       │         │
+    │  ◀─ escalate┤  │           план неверен? → эскалация человеку      │         │
+    │             │  └─ alt: DONE ────────────────────────────────────── ┘         │
+    │             │                 │               │                │             │
+    │             │ review-package PLAN_FILE BASE HEAD (НЕ HEAD~1!)  │             │
+    │             │────────────────▶│               │                │             │
+    │             │◀ package path ──┤ (commits + stat + diff -U10)   │             │
+    │             │                 │               │                │             │
+    │             │  dispatch: brief + report + package + Global Constraints       │
+    │             │  (без пре-джаджинга: никаких "не флагай X")      │             │
+    │             │─────────────────────────────────────────────────▶│             │
+    │             │                 │               │                ├──┐ two-stage│
+    │             │                 │               │                │  │ 1) spec  │
+    │             │                 │               │                │◀─┘ 2) quality
+    │             │◀── Spec ✅/❌ + findings (Critical/Important/Minor) + ⚠️ ───────┤
+    │             │                 │               │                │             │
+    │             │  ┌─ alt: Spec ✅, quality approved ─────────────────────────┐  │
+    │             │  │  "Task N: complete (commits b..h, review clean)" ───────────▶
+    │             │  ├─ alt: findings → FIX LOOP (СД-4) ────────────────────────┤  │
+    │             │  └─ alt: конфликт finding ↔ текст плана ────────────────────┘  │
+    │◀─ "который governs?" ─┤       │               │                │             │
+    │── ruling ──▶│                 │               │                │             │
+    │             │                 │               │                │             │
+    │             │   ⟲ следующая задача (последовательно, НИКОГДА parallel)       │
+</pre>
+    </div>
+    <figcaption><span class="k">СД-3.</span> Ключевой паттерн: артефакты передаются файлами (brief, report, package), контроллер видит только пути и статусы ≤15 строк — его контекст остаётся чистым для координации. Ср. рис. 4.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="panel">
+<pre aria-label="Секвенция fix loop: пять раундов, эскалация модели с четвёртого, breaker на пятом">
+СД-4 · FIX LOOP — 5 раундов, эскалация модели, circuit breaker
+
+┌───────┐  ┌────────────┐  ┌─────────────┐  ┌──────────────┐  ┌─────────────┐  ┌────────┐
+│ Human │  │ Controller │  │ Implementer │  │ Implementer' │  │ Re-reviewer │  │ Ledger │
+│Partner│  │            │  │ (original,  │  │ (fresh, model│  │  (scoped,   │  │        │
+└───┬───┘  └─────┬──────┘  │  resumed)   │  │  tier +1)    │  │ cheap-mid)  │  └───┬────┘
+    │            │         └──────┬──────┘  └──────┬───────┘  └──────┬──────┘      │
+    │            │                │                │                 │             │
+    │        триггер: Spec ❌ / Critical / Important / подтверждённый ⚠️           │
+    │            │                │                │                 │             │
+    │            ├──┐ Minor → сразу в ledger как deferred, в loop НЕ входят        │
+    │            │◀─┘ "Task N: minor (deferred): …" ──────────────────────────────▶│
+    │            │                │                │                 │             │
+    │   ╔════════╪════ РАУНД R (макс 5) ═══════════╪═════════════════╪═══════════╗ │
+    │   ║        │                │                │                 │           ║ │
+    │   ║  [R ≤ 3]  resume + findings verbatim     │                 │           ║ │
+    │   ║        │───────────────▶│                │                 │           ║ │
+    │   ║        │                │                │                 │           ║ │
+    │   ║  [R ≥ 4]  fresh dispatch, модель НА ТИР ВЫШЕ застрявшей:   │           ║ │
+    │   ║        │   "prior implementer attempted N times; you own   │           ║ │
+    │   ║        │    it now. Read the report file for what was tried"           ║ │
+    │   ║        │────────────────────────────────▶│                 │           ║ │
+    │   ║        │                │                │                 │           ║ │
+    │   ║        │       fix + re-run covering tests + append fix    │           ║ │
+    │   ║        │       report → REPORT_FILE      │                 │           ║ │
+    │   ║        │◀─ короткий контракт статуса ────┤                 │           ║ │
+    │   ║        │                │                │                 │           ║ │
+    │   ║        ├──┐ гейт: fix report содержит tests + command      │           ║ │
+    │   ║        │◀─┘ + output? иначе — не диспетчеризовать ревью    │           ║ │
+    │   ║        │                │                │                 │           ║ │
+    │   ║        │ review-package PLAN FIX_BASE HEAD (только fix-диапазон)       ║ │
+    │   ║        │ dispatch re-review: findings list + brief + report + diff     ║ │
+    │   ║        │─────────────────────────────────────────────────▶ │           ║ │
+    │   ║        │                │                │                 │           ║ │
+    │   ║        │◀ per-finding: ADDRESSED | NOT ADDRESSED ──────────┤           ║ │
+    │   ║        │  + new breakage ТОЛЬКО в fix-диффе → в open findings          ║ │
+    │   ║        │  out-of-scope → в ledger (deferred), loop НЕ продлевают       ║ │
+    │   ║        │                │                │                 │           ║ │
+    │   ║        │  "Task N: fix round R/5 (X addressed, Y open; commits)" ─────▶║ │
+    │   ║        │                │                │                 │           ║ │
+    │   ╚════════╪══ Y=0 → complete │ Y&gt;0 ∧ R&lt;5 → раунд R+1 │ R=5 → breaker ═══╝ │
+    │            │                │                │                 │             │
+    │   ══ BREAKER (R=5, остались open) — прекратить диспетчеризацию ══           │
+    │            ├──┐ адъюдикация КАЖДОГО finding (только на капе,   │             │
+    │            │◀─┘ раньше = pre-judging; silent discard запрещён):│             │
+    │            │                │                │                 │             │
+    │            │  reviewer неправ / спорно → park + ruling ───────────────────▶ │
+    │            │  реально, но ничего не строится сверху → park + ruling ──────▶ │
+    │            │  реально И load-bearing:                          │             │
+    │            │     "Task N: BLOCKED — reason" ──────────────────────────────▶ │
+    │◀── STOP: finding + текст плана + история fix-раундов ──┤       │             │
+</pre>
+    </div>
+    <figcaption><span class="k">СД-4.</span> Раунд = один fix-диспетч + одно скоупленное ре-ревью. Логика эскалации: цикл, переживший три резюма, означает, что имплементер не видит свою проблему — «fresh eyes and a capability bump in one move». Ср. рис. 5.</figcaption>
+  </figure>
+
+  <figure>
+    <div class="panel">
+<pre aria-label="Секвенция финального ревью и завершения ветки: одна fix-волна, одно ре-ревью, выбор судьбы ветки">
+СД-5 · ФИНАЛЬНОЕ РЕВЬЮ И ЗАВЕРШЕНИЕ ВЕТКИ
+
+┌───────┐  ┌────────────┐  ┌──────────────┐  ┌───────────┐  ┌─────────────┐  ┌──────────┐
+│ Human │  │ Controller │  │ Final Code   │  │ ONE Fix   │  │ Re-reviewer │  │ git /    │
+│Partner│  │            │  │ Reviewer     │  │ subagent  │  │  (scoped)   │  │ worktree │
+└───┬───┘  └─────┬──────┘  │ (MOST CAPABLE│  │(все find- │  └──────┬──────┘  └────┬─────┘
+    │            │         │  model)      │  │ ings разом│         │              │
+    │            │         └──────┬───────┘  └─────┬─────┘         │              │
+    │            │                │                │               │              │
+    │        все задачи complete в ledger          │               │              │
+    │            │                │                │               │              │
+    │            │ MERGE_BASE = git merge-base main HEAD ─────────────────────────▶
+    │            │ review-package PLAN MERGE_BASE HEAD → path      │              │
+    │            │                │                │               │              │
+    │            │  dispatch (code-reviewer.md) + package path     │              │
+    │            │  + указатель на deferred-minors и parked в ledger              │
+    │            │───────────────▶│                │               │              │
+    │            │                ├──┐ вся ветка целиком           │              │
+    │            │                │◀─┘ + триаж parked/deferred     │              │
+    │            │◀─ findings ────┤                │               │              │
+    │            │                │                │               │              │
+    │   ┌─ alt: findings есть ────┼────────────────┼───────────────┼──────────┐   │
+    │   │        │  ОДИН fix-диспетч со ВСЕМ списком (не по одному │          │   │
+    │   │        │  на finding — fix wave дороже всех задач вместе)│          │   │
+    │   │        │────────────────────────────────▶│               │          │   │
+    │   │        │◀─ fixes + tests + commits ──────┤               │          │   │
+    │   │        │  ровно ОДНО scoped re-review (fix-диапазон)     │          │   │
+    │   │        │────────────────────────────────────────────────▶│          │   │
+    │   │        │◀─ verdicts ─────────────────────────────────────┤          │   │
+    │   │        ├──┐ residuals: park + ruling, load-bearing →     │          │   │
+    │   │        │◀─┘ surface человеку. ВТОРОЙ fix wave НЕ БЫВАЕТ  │          │   │
+    │   └────────┼────────────────┼────────────────┼───────────────┼──────────┘   │
+    │            │                │                │               │              │
+    │            │  rm -rf &lt;workspace&gt;  (запись теперь — git history)             │
+    │            │─────────────────────────────────────────────────────────────── ▶
+    │            ├──┐ Skill(finishing-a-development-branch)         │              │
+    │            │◀─┘              │                │               │              │
+    │            │  verify tests   │                │               │              │
+    │            │─────────────────────────────────────────────────────────────── ▶
+    │◀─ опции: merge | PR | keep | discard ─┤       │               │              │
+    │── выбор ──▶│                │                │               │              │
+    │            │  merge/PR + cleanup worktree ────────────────────────────────── ▶
+    │            │                │                │               │              │
+</pre>
+    </div>
+    <figcaption><span class="k">СД-5.</span> Асимметрия финала: ОДИН fix-сабагент со всем списком findings (per-finding фиксеры в реальной сессии стоили дороже всех задач вместе) и ровно одно ре-ревью — второй волны не существует. Residual load-bearing findings всплывают человеку на выборе судьбы ветки.</figcaption>
+  </figure>
+</section>
+
+<section class="takeaways">
+  <span class="secnum">09 · выводы</span>
+  <h2>Что унести с собой</h2>
+  <ol>
+    <li><strong>Промпты — это софт.</strong> Версии, CI через evals, запрет правок без тестов, история создания. Формулировки скиллов — оттюненные веса, их не правят по вкусу.</li>
+    <li><strong>Контекст — самый дорогой ресурс, и им управляют архитектурно.</strong> Файловая шина, одноразовые сабагенты, append-only ledger, lazy loading скиллов — полная аналогия с process isolation в ОС.</li>
+    <li><strong>Compaction — отказ узла; recovery проектируют заранее.</strong> Ре-инъекция bootstrap плюс ledger — WAL-recovery для агента: «trust the ledger and git log over your own recollection».</li>
+    <li><strong>Против рационализаций работает их перечисление.</strong> Таблицы «мысль → опровержение», собранные из реальных сессий, перехватывают уклонение в момент генерации мысли.</li>
+    <li><strong>Turn count beats token price.</strong> Дешёвая модель, делающая втрое больше ходов, дороже средней. А инвестиция в качество плана конвертируется в дешёвую модель исполнения.</li>
+    <li><strong>Циклам нужны предохранители.</strong> Жёсткий кап, эскалация тира, скоупленное ре-ревью, запрет silent discard — иначе агентские циклы либо бесконечны, либо обрываются молча.</li>
+  </ol>
+</section>
+
+<section id="wiki" class="wiki">
+  <span class="secnum">10 · база знаний</span>
+  <h2>Wiki: второй мозг проекта</h2>
+  <div class="prose">
+    <p>Пятнадцать atomic-заметок из <code>Wiki/</code> репозитория — каждая отвечает на один вопрос, все перекрёстно связаны. Порядок чтения с нуля: 00 → 05, дальше — по интересу.</p>
+  </div>
+
+  <details id="wiki-00" open>
+    <summary><span class="num">00</span>TL;DR — весь проект в 10 предложениях</summary>
+    <div class="note">
+      <p>Superpowers — это методология разработки для AI-кодинг-агентов, упакованная в plugin. Ядро — 14 markdown-«скиллов», которые инъецируются в контекст агента и меняют его поведение: вместо «сразу писать код» агент проходит дисциплинированный процесс.</p>
+      <p>Процесс: brainstorming (Socratic-диалог → спек) → git worktree (изоляция) → writing-plans (задачи по 2–5 минут) → subagent-driven development (свежий сабагент на задачу + двухступенчатое ревью) → финальное ревью всей ветки → merge/PR.</p>
+      <p>Механика активации: hook на старте сессии вливает скилл <code>using-superpowers</code> в контекст с правилом «если есть хоть 1% шанс, что скилл применим — ты ОБЯЗАН его вызвать». Это gateway ко всем остальным скиллам.</p>
+      <p>Ключевые инженерные решения: zero-dependency (ядро — чистые данные), файлы вместо текста в промптах (защита контекстного окна), ledger как event log (переживает compaction), явный выбор модели на каждую роль, circuit breaker на 5 fix-раундов.</p>
+      <p>Поддерживается 11 харнессов через тонкие адаптеры; сам core платформо-независим. Автор — Jesse Vincent (Prime Radiant). 94% PR-ов отклоняется: контент скиллов защищён eval-ами, менять его «по вкусу» запрещено.</p>
+    </div>
+  </details>
+
+  <details id="wiki-01">
+    <summary><span class="num">01</span>Что такое skill</summary>
+    <div class="note">
+      <p><strong>Одна фраза:</strong> skill = исполняемое знание. Markdown-файл, который LLM «выполняет» как программу.</p>
+      <h4>Анатомия</h4>
+<pre>skills/&lt;name&gt;/
+├── SKILL.md            ← точка входа (обязателен)
+│   ├── frontmatter     ← name + description (триггер-условия!)
+│   └── body            ← процесс, чеклисты, таблицы, dot-графы
+├── *.md                ← справочные файлы, промпт-шаблоны
+└── *.sh / *.js / *.ts  ← опциональные скрипты</pre>
+      <p>Директория скилла — агрегат (в терминах DDD, см. <a href="#wiki-09">09</a>): извне ссылаются только на корень <code>superpowers:&lt;name&gt;</code>, никогда на внутренние файлы.</p>
+      <h4>Почему «код, а не проза»</h4>
+      <p>Из CLAUDE.md: <em>«Skills are not prose — they are code that shapes agent behavior»</em>. Следствия: изменение = поведенческий дифф и требует before/after eval-доказательств (<a href="#wiki-12">12</a>); формулировки — тюненые конструкции, а не стиль (<a href="#wiki-10">10</a>); рефакторинг «для соответствия документации Anthropic» прямо запрещён.</p>
+      <h4>description = триггер</h4>
+      <p>Frontmatter <code>description</code> — не документация, а условие срабатывания. Агент постоянно видит только name+description всех скиллов; полный текст загружается при вызове — lazy loading знаний (<a href="#wiki-06">06</a>).</p>
+      <h4>Каталог (14 скиллов)</h4>
+      <table class="mini">
+        <tr><th>категория</th><th>скиллы</th></tr>
+        <tr><td>gateway</td><td>using-superpowers</td></tr>
+        <tr><td>процесс</td><td>brainstorming, writing-plans, executing-plans, subagent-driven-development, finishing-a-development-branch</td></tr>
+        <tr><td>дисциплина</td><td>test-driven-development, verification-before-completion, systematic-debugging</td></tr>
+        <tr><td>ревью</td><td>requesting-code-review, receiving-code-review</td></tr>
+        <tr><td>инфра</td><td>using-git-worktrees, dispatching-parallel-agents</td></tr>
+        <tr><td>мета</td><td>writing-skills</td></tr>
+      </table>
+    </div>
+  </details>
+
+  <details id="wiki-02">
+    <summary><span class="num">02</span>Активация: почему скиллы вообще срабатывают</summary>
+    <div class="note">
+      <p><strong>Проблема:</strong> скиллы на диске — мёртвый груз, LLM не будет искать их сам. <strong>Решение:</strong> принудительная инъекция gateway-скилла в контекст на старте каждой сессии (механика — рис. 2 и СД-1).</p>
+      <p>Три детали, каждая важна:</p>
+      <ol>
+        <li><strong>Matcher включает <code>compact</code>.</strong> Compaction стирает контекст — bootstrap инъецируется заново. Парный механизм восстановления — ledger (<a href="#wiki-04">04</a>).</li>
+        <li><strong>Один bash-скрипт эмитит три JSON-формата</strong>, ветвясь по env-переменным — анти-коррупционный слой в 50 строк. Claude Code читает оба поля без дедупликации, поэтому эмитить можно только одно.</li>
+        <li><strong>Не hook — так transform.</strong> OpenCode инъецирует через message transform (с кэшем контента), Pi — через extension. Порт другой, контракт тот же (<a href="#wiki-08">08</a>).</li>
+      </ol>
+      <p><code>using-superpowers</code> — не список скиллов, а полиси принуждения:</p>
+      <blockquote>"If you think there is even a 1% chance a skill might apply… you ABSOLUTELY MUST invoke the skill."</blockquote>
+      <p>Плюс таблица Red Flags — 12 «мыслей-рационализаций» с опровержениями (<a href="#wiki-10">10</a>), приоритет process-скиллов и субординация: инструкции человека &gt; скиллы &gt; дефолтное поведение.</p>
+      <p><strong>Acceptance test интеграции:</strong> в чистой сессии сообщение «Let's make a react todo list» должно авто-триггернуть brainstorming до кода. Не триггерит — не интеграция.</p>
+    </div>
+  </details>
+
+  <details id="wiki-03">
+    <summary><span class="num">03</span>Workflow: сага от идеи до merge</summary>
+    <div class="note">
+      <p>Семь скиллов сцеплены в один долгоживущий процесс — терминальное состояние одного = вход другого (визуально — рис. 3 и СД-2).</p>
+      <h4>Ключевые свойства</h4>
+      <ul>
+        <li><strong>Гейты человека — ровно 5:</strong> одобрение дизайна, одобрение спека, рулинги «finding vs план», BLOCKED-эскалации, судьба ветки. Между ними — автономия; «Should I continue?» запрещён.</li>
+        <li><strong>Анти-паттерн «слишком просто для дизайна» заблокирован явно:</strong> даже todo-list и config change проходят через дизайн. Дизайн может быть в 3 предложения — но обязан быть показан и одобрен.</li>
+        <li><strong>Терминальные состояния жёсткие:</strong> brainstorming может вызвать только writing-plans — защита от перепрыгивания фаз.</li>
+        <li><strong>Развилка исполнения:</strong> SDD (та же сессия, свежие сабагенты) vs executing-plans (параллельная сессия, батчи, человек в цикле).</li>
+        <li><strong>События-переходы</strong> (DDD-сага): DesignApproved → SpecApproved → WorkspaceReady → PlanWritten → TaskCompleted×N → BranchReviewed → Merged. Компенсации: fix loop (<a href="#wiki-05">05</a>), BLOCKED.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details id="wiki-04">
+    <summary><span class="num">04</span>SDD: цикл одной задачи</summary>
+    <div class="note">
+      <p>Формула: <strong>fresh subagent per task + task review (spec + quality) + broad final review = high quality, fast iteration</strong> (визуально — рис. 4 и СД-3).</p>
+      <h4>Роли</h4>
+      <ul>
+        <li><strong>Controller</strong> — координатор; никогда не пишет код сам («controller fixes pollute your context and skip review»).</li>
+        <li><strong>Implementer</strong> — свежий сабагент, одна задача; вопросы до начала работы поощряются.</li>
+        <li><strong>Task Reviewer</strong> — двухступенчатая проверка: spec compliance, затем code quality.</li>
+      </ul>
+      <h4>Контракт статусов</h4>
+      <table class="mini">
+        <tr><th>статус</th><th>реакция контроллера</th></tr>
+        <tr><td>DONE</td><td>review package → диспетч ревьюера</td></tr>
+        <tr><td>DONE_WITH_CONCERNS</td><td>прочитать concerns; про корректность/скоуп — решить до ревью</td></tr>
+        <tr><td>NEEDS_CONTEXT</td><td>дать контекст, re-dispatch</td></tr>
+        <tr><td>BLOCKED</td><td>контекст? → дать. Сложно? → модель выше. Велика? → разбить. План неверен? → человек</td></tr>
+      </table>
+      <h4>Ledger — память, переживающая compaction</h4>
+      <p><code>.superpowers/sdd/&lt;plan&gt;/progress.md</code>, append-only, идентичность в первой строке. Строка <code>Task N: complete</code> = не передиспетчеризовать: контроллеры, потерявшие место после compaction, передиспетчеризовали целые последовательности готовых задач — «the single most expensive failure observed». «Trust the ledger and git log over your own recollection».</p>
+      <h4>Тонкости</h4>
+      <ul>
+        <li><strong>BASE, не HEAD~1</strong> — иначе молча теряются все коммиты многокоммитной задачи, кроме последнего.</li>
+        <li><strong>Никакого пре-джаджинга ревью</strong> — «не флагай X» запрещено; спорное разруливается адъюдикацией.</li>
+        <li><strong>Дисптач описывает одну задачу</strong> — реальный анти-кейс: 42k символов, 99% — вставленная история сессии.</li>
+        <li><strong>Конфликты плана — батчем до Task 1</strong>, одним вопросом человеку.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details id="wiki-05">
+    <summary><span class="num">05</span>Fix loop: 5 раундов, эскалация, breaker</summary>
+    <div class="note">
+      <p>Триггер: Spec ❌, любой Critical/Important finding, или подтверждённый ⚠️ (визуально — рис. 5 и СД-4).</p>
+      <p><strong>Два выхода до входа в цикл:</strong> Minor → сразу в ledger как deferred («a roll-up nobody reads is a silent discard»); finding против текста плана → решает человек.</p>
+      <p><strong>Раунд = один fix-диспетч + одно scoped re-review. Максимум 5.</strong> R1–3 — resume оригинального имплементера (контекст цел). R4–5 — свежий имплементер, модель на тир выше: цикл, переживший три резюма, означает, что имплементер не видит свою проблему.</p>
+      <p><strong>Гейт перед re-review:</strong> fix report обязан содержать покрывающие тесты + команду + вывод — отчёт и есть test evidence. <strong>Re-review скоуплен:</strong> только вердикты по списку findings + поломки в fix-диффе; out-of-scope → ledger, цикл не продлевают.</p>
+      <h4>Breaker (R=5)</h4>
+      <table class="mini">
+        <tr><th>вердикт</th><th>действие</th></tr>
+        <tr><td>ревьюер неправ / спорно</td><td>park + ruling в ledger; финальное ревью увидит обе стороны</td></tr>
+        <tr><td>реально, ничего сверху не строится</td><td>park + ruling «real, deferred»</td></tr>
+        <tr><td>реально И load-bearing</td><td>STOP: BLOCKED, полный отчёт человеку</td></tr>
+      </table>
+      <p>Адъюдикация только на капе (раньше = pre-judging); каждое решение — запись в ledger; silent discard запрещён.</p>
+    </div>
+  </details>
+
+  <details id="wiki-06">
+    <summary><span class="num">06</span>Экономика контекста</summary>
+    <div class="note">
+      <p>Контекстное окно — не буфер, а дорогая арендуемая память: всё, что попало в контекст контроллера, перечитывается на каждом ходу до конца сессии.</p>
+      <h4>Приёмы</h4>
+      <ol>
+        <li><strong>Файлы как шина данных.</strong> Brief, report, review package передаются путями — данные текут через диск, минуя контекст контроллера (рис. 4).</li>
+        <li><strong>Свежий сабагент на задачу</strong> — не для параллелизма, а для гигиены: контроллер конструирует ровно нужный контекст.</li>
+        <li><strong>Ledger против compaction</strong> — истина живёт в append-only файле + git log.</li>
+        <li><strong>Lazy loading скиллов</strong> — постоянно в контексте только name+description.</li>
+        <li><strong>Короткие контракты возврата</strong> — имплементер возвращает ≤15 строк; детали в report-файле.</li>
+        <li><strong>Нарратив под запретом</strong> — «narrate at most one short line between tool calls».</li>
+      </ol>
+      <p><strong>Инвариант:</strong> контроллер = координатор с чистым контекстом; работа, требующая большого контекста, выносится в одноразовый сабагент. Полная аналогия с process isolation в ОС.</p>
+    </div>
+  </details>
+
+  <details id="wiki-07">
+    <summary><span class="num">07</span>Экономика моделей</summary>
+    <div class="note">
+      <p>Принцип: наименее мощная модель, которая справится с ролью. Анти-дефолт: «an omitted model inherits your session's model — often the most expensive» — поэтому модель указывается явно в каждом диспетче.</p>
+      <table class="mini">
+        <tr><th>роль</th><th>модель</th></tr>
+        <tr><td>имплементер: план содержит код</td><td>самая дешёвая (транскрипция + тесты)</td></tr>
+        <tr><td>имплементер: 1–2 файла, полный спек</td><td>дешёвая</td></tr>
+        <tr><td>имплементер: интеграция</td><td>стандартная</td></tr>
+        <tr><td>имплементер: проза в плане</td><td>mid-tier как пол</td></tr>
+        <tr><td>task reviewer</td><td>по размеру/риску диффа</td></tr>
+        <tr><td>scoped re-review</td><td>дешёвая-mid</td></tr>
+        <tr><td>fix-эскалация (R≥4)</td><td>тир выше застрявшего</td></tr>
+        <tr><td>финальное ревью ветки</td><td>самая сильная</td></tr>
+      </table>
+      <p><strong>Turn count beats token price:</strong> дешёвые модели делают 2–3× больше ходов на многошаговой работе и выходят дороже. Оптимизировать надо произведение (цена/ход × ходы). И: инвестиция в качество плана конвертируется в дешёвую модель исполнения.</p>
+    </div>
+  </details>
+
+  <details id="wiki-08">
+    <summary><span class="num">08</span>Харнесс-адаптеры: 11 платформ, один core</summary>
+    <div class="note">
+      <p>Ports &amp; Adapters в чистом виде: core — платформо-независимые данные, специфика — в тонких адаптерах (рис. 1).</p>
+      <h4>Три стратегии активации под один контракт</h4>
+      <ol>
+        <li>hook + JSON (Claude, Cursor, Copilot) — ветвление в одном bash-скрипте;</li>
+        <li>message transform (OpenCode) — JS-плагин с кэшем bootstrap-контента;</li>
+        <li>extension (Pi) — TS; у Pi нативные скиллы, <code>Skill</code> tool не нужен.</li>
+      </ol>
+      <p><strong>Словарь инструментов:</strong> OpenCode-адаптер несёт tool mapping (ACL на уровне языка): скиллы написаны в словаре Claude Code, адаптер переводит (<code>Subagent</code> → <code>task</code>, <code>Read files</code> → <code>read</code>…).</p>
+      <p><strong>Манифесты</strong> — дубли метаданных в формате каждой платформы; единая версия 6.2.0 транслируется <code>bump-version.sh</code>.</p>
+      <p><strong>Критерий настоящей интеграции:</strong> «If you are not sure whether your integration loads the bootstrap at session start, it does not». Отклоняются: копирование скиллов руками, npx-шимы, opt-in per session.</p>
+    </div>
+  </details>
+
+  <details id="wiki-09">
+    <summary><span class="num">09</span>DDD-карта проекта</summary>
+    <div class="note">
+      <p>Домен — не «код», а методология разработки для AI-агентов (визуально — рис. 6).</p>
+      <h4>Поддомены</h4>
+<pre>CORE ──────── Skills Library + Workflow-методология (skills/)
+SUPPORTING ── Активация/Bootstrap · Мета-скиллы · QA/Evals
+GENERIC ───── Харнесс-интеграция · Дистрибуция</pre>
+      <h4>Bounded contexts</h4>
+      <p>Skill Authoring (скилл как исходник) · Skill Runtime (скилл как инструкция; здесь Plan, Ledger, роли) · Activation (ACL из трёх JSON-форматов) · Distribution. Одно слово «Skill» — разная семантика в первых двух = классический признак границы.</p>
+      <h4>Отношения контекстов</h4>
+      <ul>
+        <li>Skills → харнессы: <strong>published language</strong> — Markdown + YAML frontmatter;</li>
+        <li>адаптеры → харнессы: <strong>conformist</strong> + ACL-словарь у OpenCode;</li>
+        <li>evals → skills: <strong>customer–supplier</strong> — правки только с eval-доказательствами.</li>
+      </ul>
+      <h4>Агрегаты и события</h4>
+      <p><strong>Skill</strong> — агрегатный корень (граница = директория, идентичность = frontmatter name). <strong>Workflow</strong> — сага с компенсациями. <strong>Ledger</strong> — event store процесса. <strong>Red Flags</strong> — policy-объекты (<a href="#wiki-10">10</a>).</p>
+      <p><strong>Оценка:</strong> образцовый Ports &amp; Adapters с ядром из чистых данных; zero-dependency — доменный инвариант. Слабое место — один bash-скрипт со знанием трёх протоколов инъекции.</p>
+    </div>
+  </details>
+
+  <details id="wiki-10">
+    <summary><span class="num">10</span>Behavior shaping: психология для LLM</summary>
+    <div class="note">
+      <p>Самая оригинальная часть проекта: скиллы закрывают известные пути уклонения LLM от процесса — документированные баги агентского поведения и патчи к ним.</p>
+      <ol>
+        <li><strong>Red Flags / rationalization tables</strong> — «мысль-соблазн → опровержение», 12 строк в using-superpowers, своя таблица в SDD. LLM генерирует рационализацию → она уже в таблице → рядом опровержение. Прививка до болезни, собранная из реальных сессий.</li>
+        <li><strong>Усиление сигнала</strong> — <code>&lt;EXTREMELY-IMPORTANT&gt;</code>, CAPS, правило 1%: дешевле открыть скилл зря, чем пропустить нужный.</li>
+        <li><strong>Явные разрешения против выученной услужливости</strong> — «It is always OK to stop and say "this is too hard for me". Bad work is worse than no work» + формализованные статусы эскалации.</li>
+        <li><strong>Hard gates и терминальные состояния</strong> — «ни строчки кода до одобрения»; анти-паттерн «too simple» назван по имени.</li>
+        <li><strong>Запрет пре-джаджинга</strong> — маркеры перечислены буквально: «если в твоём промпте есть "do not flag" — стоп».</li>
+        <li><strong>Субординация</strong> — человек &gt; скиллы &gt; дефолт.</li>
+      </ol>
+      <p><strong>Гипотеза, почему работает:</strong> агент срезает углы, оптимизируя «казаться полезным сейчас»; таблицы перехватывают этот градиент в момент генерации мысли — few-shot negative examples, встроенные в полиси. Отсюда и 94% отклонённых PR: люди правят «странные» формулировки, не понимая, что странность — это и есть механизм.</p>
+    </div>
+  </details>
+
+  <details id="wiki-11">
+    <summary><span class="num">11</span>Карта репозитория</summary>
+    <div class="note">
+<pre>superpowers/
+├── skills/            ← CORE: 14 скиллов
+├── hooks/             ← активация: hooks.json, run-hook.cmd, session-start
+├── .claude-plugin/ .codex-plugin/ .cursor-plugin/ .kimi-plugin/
+│   gemini-extension.json          ← манифесты платформ
+├── .opencode/plugins/superpowers.js  ← JS-адаптер
+├── .pi/extensions/superpowers.ts     ← TS-адаптер
+├── scripts/           ← bump-version, package-codex-plugin, lint-shell
+├── tests/             ← инфраструктурные тесты (claude-code, codex, pi…)
+├── docs/              ← porting-to-a-new-harness, testing, README.kimi/opencode
+├── CLAUDE.md AGENTS.md GEMINI.md  ← контрибьютор-гайды
+└── package.json       ← v6.2.0
+
+рантайм (в проекте пользователя, git-ignored):
+├── docs/superpowers/specs/…-design.md   ← спеки (коммитятся)
+├── docs/superpowers/plans/…             ← планы
+└── .superpowers/sdd/&lt;plan&gt;/            ← ledger, брифы, отчёты, пакеты</pre>
+      <p><strong>Любопытное:</strong> <code>systematic-debugging/CREATION-LOG.md</code> — история создания скилла, археология промпт-инжиниринга; <code>writing-skills/persuasion-principles.md</code> — теория под <a href="#wiki-10">behavior shaping</a>; <code>tests/claude-code/analyze-token-usage.py</code> — экономика контекста измеряется, не постулируется. Осторожно: <code>git clean -fdx</code> уничтожает workspace.</p>
+    </div>
+  </details>
+
+  <details id="wiki-12">
+    <summary><span class="num">12</span>Тестирование и evals: как тестируют промпты</summary>
+    <div class="note">
+      <p><strong>Контур 1 — инфраструктура</strong> (<code>tests/</code>): shell/mjs-тесты механики плагина. Деталь: триггеринг тестируется на haiku — проверка нижней границы: сработает на слабой модели — сработает на любой.</p>
+      <p><strong>Контур 2 — поведение</strong> (superpowers-evals, внешний репо): харнесс drill гоняет реальные tmux-сессии Claude Code / Codex / Gemini CLI, скилл-комплаенс судит LLM-верифаер; PR требует adversarial pressure testing + before/after результаты.</p>
+      <p>Это зрелый ответ на «как CI-ить промпты»: функция стохастическая, спека — желаемое распределение поведения. Решение: (а) реальные сессии, не синтетика; (б) LLM-судья по рубрике; (в) сравнение до/после, не абсолютная оценка; (г) adversarial-давление. Отсюда запрет «compliance»-правок: формулировки — оттюненные веса.</p>
+      <p>Мета-скилл <code>writing-skills</code> замыкает цикл: система улучшает саму себя тем же процессом, которым улучшает чужой код.</p>
+    </div>
+  </details>
+
+  <details id="wiki-13">
+    <summary><span class="num">13</span>Инсайты: неочевидное, что стоит унести</summary>
+    <div class="note">
+      <ol>
+        <li><strong>Промпты — это софт со всеми следствиями</strong> — версии, CI, запрет правок без тестов, история создания.</li>
+        <li><strong>Контекст — самый дорогой ресурс</strong>, и им управляют архитектурно, а не «пиши короче».</li>
+        <li><strong>Compaction — отказ узла</strong>; recovery проектируют заранее (bootstrap re-inject + ledger = WAL-recovery).</li>
+        <li><strong>Против рационализаций работает их перечисление</strong> — дешёвый переносимый приём для любых агентских полиси.</li>
+        <li><strong>Эскалация — штатный исход</strong>: без дешёвого способа сказать «не могу» агент будет врать.</li>
+        <li><strong>Turn count beats token price.</strong></li>
+        <li><strong>Циклам нужны breakers</strong> — иначе бесконечность или молчаливый обрыв.</li>
+        <li><strong>Ядро из данных масштабируется почти бесплатно</strong> — markdown + интерпретатор на каждой платформе.</li>
+        <li><strong>Социальный слой — тоже архитектура</strong>: anti-slop-полиси формализована как инженерный артефакт.</li>
+        <li><strong>Открытые вопросы:</strong> bash-скрипт с тремя форматами — узкое место; Platform Adaptation — протечка адаптеров в core; жёсткость гейтов против трения пользователей — ручка, которую крутят выбором executing-plans vs SDD.</li>
+      </ol>
+    </div>
+  </details>
+</section>
+
+<footer class="colophon">
+  Источник: github.com/obra/superpowers · v6.2.0 · Jesse Vincent / Prime Radiant · разбор: DDD-анализ + HLD + секвенции, полные заметки — в Wiki/ репозитория
+</footer>
+
+</div>
+</body>
+</html>
