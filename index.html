@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, Python и TypeScript инструменты, диаграммы последовательности и wiki.">
+<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, Python/TypeScript/Shell инструменты, диаграммы последовательности и wiki.">
 <meta property="og:title" content="Superpowers — архитектурный атлас">
-<meta property="og:description" content="Методология как исполняемый артефакт: 11 диаграмм, 5 секвенций, DDD-карта и 16 wiki-заметок по obra/superpowers.">
+<meta property="og:description" content="Методология как исполняемый артефакт: 12 диаграмм, 5 секвенций, DDD-карта и 17 wiki-заметок по obra/superpowers.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yunusovt983-art.github.io/superpowers/">
 <meta property="og:locale" content="ru_RU">
@@ -247,9 +247,10 @@
   <a href="#codeview">09 · Код</a>
   <a href="#pytool">10 · Python</a>
   <a href="#tstool">11 · TypeScript</a>
-  <a href="#sequences">12 · Секвенции</a>
-  <a href="#takeaways-sec">13 · Выводы</a>
-  <a href="#wiki">14 · Wiki</a>
+  <a href="#shelltool">12 · Shell</a>
+  <a href="#sequences">13 · Секвенции</a>
+  <a href="#takeaways-sec">14 · Выводы</a>
+  <a href="#wiki">15 · Wiki</a>
 </nav>
 <button id="theme-btn" title="Переключить тему" aria-label="Переключить светлую/тёмную тему">◐</button>
 
@@ -1050,8 +1051,46 @@ Superpowers молча выключается,                  же (context() 
   </div>
 </section>
 
+<section id="shelltool">
+  <span class="secnum">12 · shell-скрипты</span>
+  <h2>Инструмент есть, гейта нет — третий раз подряд</h2>
+  <div class="prose">
+    <p>39 shell-файлов, ~6900 строк. У проекта уже есть настоящая линт-инфраструктура — <code>scripts/lint-shell.sh</code> (shellcheck + shfmt) с собственным тестом. Но тест проверяет только то, что линтер правильно <em>вызывает</em> shellcheck на застабленных инструментах — ни один тест не проверяет, что реальный трекнутый код чист. Прогон на весь репозиторий вскрыл два живых бага.</p>
+  </div>
+  <figure>
+    <div class="panel">
+<pre>БАГ 1 — диагностика, которая всегда врёт (тест до 30 минут на прогон)
+
+ДО                                          ПОСЛЕ
+cmd | tee out || {                          cmd | tee out || {
+  echo ""                                     exec_status=$?   ← первой строкой,
+  echo "==="                                                     до любых echo
+  echo "exit code: $?"  ← $? тут =            echo ""
+}                          код echo выше,      echo "==="
+                           не cmd!             echo "exit code: $exec_status"
+эмпирика: false || { echo""; echo"==="; }   }
+  echo "exit: $?" }  →  ВСЕГДА "exit: 0"     эмпирика: → "exit: 1" (реальный код)
+
+
+БАГ 2 — путь молча портится в редком случае (scripts/bump-version.sh)
+
+ДО                                          ПОСЛЕ
+"${match_file#$REPO_ROOT/}"                 "${match_file#"$REPO_ROOT"/}"
+  ⚠ $REPO_ROOT — glob-паттерн, не литерал      ⚠ квотинг внутри expansion
+
+REPO_ROOT=/tmp/repo[test]  →  не обрезалось  →  корректно: scripts/foo.sh
+   (если путь содержит * ? [...] — молча портится, --audit врёт про UNDECLARED)</pre>
+    </div>
+    <figcaption><span class="k">Рис. 12.</span> Оба бага сам shellcheck ловит на дефолтной серьёзности (<code>SC2320</code>, <code>SC2295</code>) — просто вывод никто не смотрел. Оба доказаны эмпирически и регрессионными тестами, падающими на старой версии кода и зелёными на исправленной.</figcaption>
+  </figure>
+  <div class="prose">
+    <p><strong>Тестирование без риска для реальных файлов:</strong> тест bump-version копирует неизменённый скрипт в одноразовую фикстуру-репозиторий с <code>[glob]</code> в пути; тест диагностики не запускает реальный 30-минутный <code>claude</code> — извлекает буквальный текст блока по content-маркерам (не номерам строк) и выполняет с поддельными <code>claude</code>/<code>timeout</code> в PATH. Оба теста явно проверены в обе стороны через <code>git show HEAD:...</code>.</p>
+    <p>Заодно гигиена: 5× <code>local x=$(cmd)</code> в <code>test-helpers.sh</code> (маскирует код возврата) → раздельное объявление; <code>trap "... $VAR" EXIT</code> → одинарные кавычки. Оставлены нетронутыми проверенные ложные срабатывания: тильда/бэктики в литеральных поисках по тексту скиллов, <code>ls</code>-парсинг с уже задокументированным обоснованием, функция, вызываемая только через <code>trap</code>.</p>
+  </div>
+</section>
+
 <section id="sequences">
-  <span class="secnum">12 · динамика</span>
+  <span class="secnum">13 · динамика</span>
   <h2>Диаграммы последовательности</h2>
   <div class="prose">
     <p>Пять сценариев в терминальной нотации — от старта сессии до merge. Здесь видно то, что статические схемы не показывают: порядок сообщений, точки ожидания человека и содержимое контрактов между участниками.</p>
@@ -1345,7 +1384,7 @@ Superpowers молча выключается,                  же (context() 
 </section>
 
 <section class="takeaways" id="takeaways-sec">
-  <span class="secnum">13 · выводы</span>
+  <span class="secnum">14 · выводы</span>
   <h2>Что унести с собой</h2>
   <ol>
     <li><strong>Промпты — это софт.</strong> Версии, CI через evals, запрет правок без тестов, история создания. Формулировки скиллов — оттюненные веса, их не правят по вкусу.</li>
@@ -1358,7 +1397,7 @@ Superpowers молча выключается,                  же (context() 
 </section>
 
 <section id="wiki" class="wiki">
-  <span class="secnum">14 · база знаний</span>
+  <span class="secnum">15 · база знаний</span>
   <h2>Wiki: второй мозг проекта</h2>
   <div class="prose">
     <p>Atomic-заметки из <code>Wiki/</code> репозитория — каждая отвечает на один вопрос, все перекрёстно связаны. Порядок чтения с нуля: 00 → 05, дальше — по интересу.</p>
@@ -1678,6 +1717,27 @@ GENERIC ───── Харнесс-интеграция · Дистрибу�
       <p><code>bootstrapSkillPath</code> вычисляется от <code>import.meta.url</code> самого модуля — подменить путь параметром нельзя, а трогать реальный <code>skills/using-superpowers/SKILL.md</code> даже в try/finally слишком рискованно. Решение: копировать неизменённый исходник в одноразовую temp-директорию, где файла скилла заведомо нет — <code>readFileSync</code> там гарантированно кинет ENOENT, реальный репозиторий не затрагивается ни на миллисекунду.</p>
       <h4>Находка, которую не стал чинить сходу</h4>
       <p>Этот файл никем не type-checked: нет <code>tsconfig.json</code>, host-пакет <code>@earendil-works/pi-coding-agent</code> нигде не установлен, <code>.github/workflows/</code> вообще не существует в репо. Node 22+ импортирует <code>.ts</code> через нативный type-stripping — это стирает аннотации типов, но не проверяет их. Единственная защита от регрессий — 7 поведенческих тестов. Вынесено как рекомендация мейнтейнерам: проект декларирует себя zero-dependency by design, добавление dev-тулинга для type-check — их решение, не тихая правка.</p>
+    </div>
+  </details>
+
+  <details id="wiki-17">
+    <summary><span class="num">17</span>Shell: инструмент есть, гейта нет — снова</summary>
+    <div class="note">
+      <p>Третий раз за три языка (Python → <a href="#wiki-15">15</a>, TypeScript → <a href="#wiki-16">16</a>, теперь shell) один и тот же паттерн: качественный инструмент существует, но нигде не подключён как обязательный гейт. У проекта есть настоящая линт-инфраструктура — <code>scripts/lint-shell.sh</code> (shellcheck + shfmt) с собственным тестом, но этот тест проверяет только правильность вызова shellcheck на застабленных инструментах — ни один тест не проверяет, что реальный трекнутый код чист (визуально — рис. 12).</p>
+      <h4>Баг 1: диагностика, которая всегда врёт</h4>
+      <p>В интеграционном тесте SDD (до 30 минут на прогон):</p>
+      <pre>cd "$TEST_PROJECT" && timeout 1800 claude ... | tee "$OUTPUT_FILE" || {
+    echo ""
+    echo "==="
+    echo "EXECUTION FAILED (exit code: $?)"   ← $? тут = код echo ВЫШЕ, не claude
+}</pre>
+      <p>Воспроизвёл эмпирически: <code>false || { echo ""; echo "==="; echo "exit: $?"; }</code> → печатает «exit: 0». Между провалом и чтением <code>$?</code> стоят два успешных <code>echo</code>, каждый перезаписывает <code>$?</code>. Сам shellcheck ловит это на дефолтной серьёзности (<code>SC2320</code>) — просто вывод никто не смотрел. <strong>Фикс:</strong> захватить <code>$?</code> первой строкой внутри <code>|| { ... }</code>, до любых других команд — структуру блока нельзя убирать из-за <code>set -e</code>.</p>
+      <h4>Баг 2: путь молча портится в редком случае</h4>
+      <p>В <code>scripts/bump-version.sh</code>: <code>"${match_file#$REPO_ROOT/}"</code> — без внутренних кавычек <code>$REPO_ROOT</code> интерпретируется как glob-паттерн, не литеральная строка (<code>SC2295</code>). Эмпирика: <code>REPO_ROOT="/tmp/repo[test]"</code> → префикс не обрезается вообще (строка остаётся полной), с фиксом (<code>"${match_file#"$REPO_ROOT"/}"</code>) — корректно. Если путь репозитория содержит <code>*</code>/<code>?</code>/<code>[...]</code> — <code>--audit</code> молча репортит задекларированные файлы как UNDECLARED. Доказано полноценной регрессионной фикстурой с <code>[glob]</code> в пути.</p>
+      <h4>Тестирование без риска для реальных файлов</h4>
+      <p>Тот же принцип, что в <a href="#wiki-15">15</a> и <a href="#wiki-16">16</a>: bump-version-тест копирует неизменённый скрипт в одноразовую фикстуру-репозиторий; тест диагностики не запускает реальный 30-минутный <code>claude</code> — извлекает буквальный текст блока по content-маркерам (не номерам строк) и выполняет с поддельными <code>claude</code>/<code>timeout</code> в PATH. Оба теста явно проверены в обе стороны через <code>git show HEAD:...</code> — падают на старой версии кода, зелёные на исправленной.</p>
+      <h4>Гигиена и то, что оставлено нетронутым</h4>
+      <p>5× <code>local x=$(cmd)</code> в <code>test-helpers.sh</code> (маскирует код возврата, <code>SC2155</code>) → раздельное объявление; <code>trap "... $VAR" EXIT</code> → одинарные кавычки (<code>SC2064</code>). Проверено и НЕ исправлено: тильда/бэктики в литеральных поисках по тексту скиллов (<code>SC2088</code>, <code>SC2016</code>) — раскрытие сломало бы сам тест; <code>ls</code>-парсинг с уже задокументированным обоснованием (<code>SC2012</code>); функция, вызываемая только через <code>trap</code> (ложное <code>SC2329</code>); <code>A && B | C || D</code> безопасно из-за активного <code>pipefail</code> (<code>SC2015</code>).</p>
     </div>
   </details>
 </section>
