@@ -2,9 +2,9 @@
 <html lang="ru">
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, Python/TypeScript/Shell инструменты, диаграммы последовательности и wiki.">
+<meta name="description" content="Архитектурный атлас проекта obra/superpowers: HLD, активация, workflow, SDD, fix loop, DDD-карта, deployment, visual companion, code view, Python/TypeScript/Shell инструменты, harness shapes, диаграммы последовательности, state machine, activation изнутри, wiki.">
 <meta property="og:title" content="Superpowers — архитектурный атлас">
-<meta property="og:description" content="Методология как исполняемый артефакт: 12 диаграмм, 5 секвенций, DDD-карта и 17 wiki-заметок по obra/superpowers.">
+<meta property="og:description" content="Методология как исполняемый артефакт: 15 диаграмм, 5 секвенций, DDD-карта, state machine и 17 wiki-заметок по obra/superpowers.">
 <meta property="og:type" content="article">
 <meta property="og:url" content="https://yunusovt983-art.github.io/superpowers/">
 <meta property="og:locale" content="ru_RU">
@@ -248,9 +248,12 @@
   <a href="#pytool">10 · Python</a>
   <a href="#tstool">11 · TypeScript</a>
   <a href="#shelltool">12 · Shell</a>
-  <a href="#sequences">13 · Секвенции</a>
-  <a href="#takeaways-sec">14 · Выводы</a>
-  <a href="#wiki">15 · Wiki</a>
+  <a href="#harnessshapes">13 · Харнесс-Shapes</a>
+  <a href="#sequences">14 · Секвенции</a>
+  <a href="#statemachine">15 · State Machine</a>
+  <a href="#activationcomp">16 · Activation изнутри</a>
+  <a href="#takeaways-sec">17 · Выводы</a>
+  <a href="#wiki">18 · Wiki</a>
 </nav>
 <button id="theme-btn" title="Переключить тему" aria-label="Переключить светлую/тёмную тему">◐</button>
 
@@ -1089,8 +1092,65 @@ REPO_ROOT=/tmp/repo[test]  →  не обрезалось  →  корректн
   </div>
 </section>
 
+<section id="harnessshapes">
+  <span class="secnum">13 · харнесс-shapes</span>
+  <h2>Как реально устроены харнесс-адаптеры</h2>
+  <div class="prose">
+    <p>Более глубокий проход по разделу 02: «просто JSON-манифест» — не одна категория, а минимум четыре разных механизма доставки bootstrap'а. Источник истины — <code>docs/porting-to-a-new-harness.md</code> (Part 4 + Appendix A), а не догадка по расширению файла. Уточняет и корректирует секцию wiki 08 ниже.</p>
+  </div>
+  <figure>
+    <div class="panel">
+<pre>┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│                      ХАРНЕСС-АДАПТЕРЫ: ТРИ SHAPE + ДВА ИСКЛЮЧЕНИЯ                       │
+│                 (docs/porting-to-a-new-harness.md — Part 4, Appendix A)                 │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+  SHAPE A — SHELL-HOOK: харнесс запускает команду, читает stdout как JSON
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ Claude Code · Cursor · Copilot CLI — ОДИН и тот же bash: hooks/session-start            │
+│ Различаются только именем JSON-поля на выходе (ACL внутри самого скрипта):              │
+│   Claude Code  -&gt; hookSpecificOutput.additionalContext                                  │
+│   Cursor       -&gt; additional_context                                                    │
+│   Copilot CLI  -&gt; additionalContext                                                     │
+│ entry point: .claude-plugin/ + hooks/hooks.json · .cursor-plugin/ + hooks-cursor.json   │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+  SHAPE B — IN-PROCESS PLUGIN: харнесс грузит JS/TS-модуль с lifecycle-колбэками
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ OpenCode -- .opencode/plugins/superpowers.js (JavaScript)                               │
+│   config hook регистрирует skills/ · chat.messages.transform мутирует message[]         │
+│ Pi -- .pi/extensions/superpowers.ts (TypeScript)                                        │
+│   resources_discover регистрирует skills/ · context event мутирует message[]            │
+│   (единственный харнесс без нативного Skill tool -- читает SKILL.md через read())       │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+  SHAPE C — INSTRUCTIONS-FILE: харнесс всегда грузит контекстный файл инсталлятора
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ Gemini CLI -- gemini-extension.json (contextFileName) -&gt; GEMINI.md                      │
+│   2x @-include: bootstrap-скилл + tool-mapping. Кода нет -- харнесс сам разворачивает   │
+│ Antigravity -- .antigravity-plugin/ -&gt; `agy plugin install` ставит СГЕНЕРИРОВАННЫЙ      │
+│   контекст-файл (Shape C через инсталлятор, не напрямую)                                │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+  ИСКЛЮЧЕНИЯ — не попадают ни в один Shape
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│ Codex -- .codex-plugin/plugin.json объявляет "hooks": {} ПУСТЫМ НАРОЧНО:                │
+│   подавляет auto-discovery hooks/hooks.json. Bootstrap не нужен -- харнесс сам          │
+│   нативно раскрывает skills/ агенту, без инъекции контекста                             │
+│ Kimi Code -- .kimi-plugin/plugin.json: "sessionStart": {"skill": "using-superpowers"}   │
+│   нативное декларативное поле манифеста -- ни хук, ни код, ни файл-конвенция            │
+│   tool-mapping зашит прямо в манифест (skillInstructions), не в отдельном .md           │
+└─────────────────────────────────────────────────────────────────────────────────────────┘</pre>
+    </div>
+    <figcaption><span class="k">Рис. 13.</span> Codex сознательно <strong>подавляет</strong> тот же механизм, которым пользуются Claude Code/Cursor (пустой <code>"hooks": {}</code>) — харнесс сам умеет раскрывать скиллы без инъекции. Kimi — не «манифест без кода»: у него есть собственное декларативное поле <code>sessionStart.skill</code>, которого нет ни у одного другого харнесса.</figcaption>
+  </figure>
+  <div class="prose">
+    <p><strong>Почему нельзя эмитить сразу два JSON-поля (Shape A):</strong> Claude Code читает и <code>additional_context</code>, и <code>hookSpecificOutput.additionalContext</code> без дедупликации — если бы скрипт выводил оба поля «на всякий случай», bootstrap вставился бы в контекст дважды. Ветвление обязано быть исключающим, не аддитивным.</p>
+  </div>
+</section>
+
 <section id="sequences">
-  <span class="secnum">13 · динамика</span>
+  <span class="secnum">14 · динамика</span>
   <h2>Диаграммы последовательности</h2>
   <div class="prose">
     <p>Пять сценариев в терминальной нотации — от старта сессии до merge. Здесь видно то, что статические схемы не показывают: порядок сообщений, точки ожидания человека и содержимое контрактов между участниками.</p>
@@ -1383,8 +1443,109 @@ REPO_ROOT=/tmp/repo[test]  →  не обрезалось  →  корректн
   </figure>
 </section>
 
+<section id="statemachine">
+  <span class="secnum">15 · state machine</span>
+  <h2>Полный автомат состояний задачи</h2>
+  <div class="prose">
+    <p>СД-3/4/5 выше показывают <em>порядок сообщений</em> во времени, но не <em>пространство состояний</em> задачи целиком в одном месте. Эта диаграмма закрывает пробел: полный автомат одной задачи SDD, от диспетчеризации до одного из двух терминальных исходов.</p>
+  </div>
+  <figure>
+    <div class="panel">
+<pre>┌───────────────────────────────────────────────────────────────────────────────────────┐
+│                     STATE MACHINE ЗАДАЧИ — синтез СД-3, СД-4, СД-5                      │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+
+  ФАЗА 1 — DISPATCH
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ PENDING -&gt; DISPATCHED: контроллер шлёт task-brief + report path + ЯВНУЮ модель          │
+│ DISPATCHED -&gt; DONE | DONE_WITH_CONCERNS   -&gt; переход в ФАЗУ 2 (Review)                  │
+│ DISPATCHED -&gt; NEEDS_CONTEXT                -&gt; контроллер даёт контекст -&gt; DISPATCHED    │
+│ DISPATCHED -&gt; BLOCKED (initial)             -&gt; контекст? модель выше? разбить задачу?   │
+│                                                 -&gt; DISPATCHED, ИЛИ план неверен -&gt; HUMAN │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+
+  ФАЗА 2 — REVIEW (task reviewer, two-stage: spec compliance -&gt; quality)
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ Spec OK + quality approved  -&gt; COMPLETE (терминал, ledger: "Task N: complete")          │
+│ Minor finding                -&gt; PARKED (deferred в ledger) -&gt; COMPLETE                  │
+│ Critical / Important /       -&gt; ФАЗА 3 (Fix Loop), раунд R=1                            │
+│   подтверждённый warning                                                                │
+│ finding противоречит плану    -&gt; HUMAN: "который governs?" -&gt; раунд с рулингом          │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+
+  ФАЗА 3 — FIX LOOP (максимум 5 раундов, circuit breaker)
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ R &lt;= 3: resume ОРИГИНАЛЬНОГО implementer, findings verbatim                             │
+│ R &gt;= 4: СВЕЖИЙ implementer, модель НА ТИР ВЫШЕ застрявшей                               │
+│ каждый раунд -&gt; scoped re-review -&gt; per-finding ADDRESSED | NOT ADDRESSED               │
+│                                                                                         │
+│   всё ADDRESSED                     -&gt; COMPLETE                                         │
+│   open findings, R &lt; 5               -&gt; раунд R+1 (см. выше)                            │
+│   open findings, R = 5               -&gt; ФАЗА 4 (Breaker)                                │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+
+  ФАЗА 4 — BREAKER (R=5, диспетчеризация прекращена)
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ контроллер адъюдицирует КАЖДЫЙ open finding (только здесь -- не pre-judging):           │
+│   reviewer неправ / спорно            -&gt; PARKED + ruling -&gt; COMPLETE                    │
+│   реально, но не load-bearing          -&gt; PARKED + ruling -&gt; COMPLETE                   │
+│   реально И load-bearing               -&gt; HUMAN ESCALATION (BLOCKED, терминал)          │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+
+  ТЕРМИНАЛЬНЫЕ СОСТОЯНИЯ
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ COMPLETE          -- ledger: "Task N: complete" -- следующая задача (последовательно)   │
+│ HUMAN ESCALATION  -- STOP: finding + текст плана + история fix-раундов -- ждём человека │
+└───────────────────────────────────────────────────────────────────────────────────────┘</pre>
+    </div>
+    <figcaption><span class="k">Рис. 14.</span> Ровно два терминала — <code>COMPLETE</code> и <code>HUMAN ESCALATION</code>. Три независимых входа в эскалацию (план неверен на диспетче · конфликт finding↔план на ревью · load-bearing finding не закрыт за 5 раундов на breaker'е) — заранее спроектированный предохранитель, не побочный эффект. <code>PARKED</code> — не тупик, а промежуточная станция: и Minor-находки, и находки breaker'а ведут в <code>COMPLETE</code>.</figcaption>
+  </figure>
+</section>
+
+<section id="activationcomp">
+  <span class="secnum">16 · activation изнутри</span>
+  <h2>Activation Layer: компонентный разрез одного файла</h2>
+  <div class="prose">
+    <p>DDD-анализ (секция 06) назвал это слабым местом: один bash-скрипт несёт знание о трёх протоколах инъекции. Здесь — зум внутрь именно этого файла: не «что реализовано на shell» (секция 12) и не «сравнение харнессов» (секция 13), а внутренний конвейер одного конкретного скрипта.</p>
+  </div>
+  <figure>
+    <div class="panel">
+<pre>┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ SessionStart событие (startup | clear | compact)                                       │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+                                            ▼  exec
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ run-hook.cmd — полиглот-диспетчер (cmd.exe-батник + bash в одном файле)                │
+│ ищет bash (Git-for-Windows, затем PATH на Unix) -&gt; exec session-start                  │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+                                            ▼
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ hooks/session-start (bash)                                                             │
+│ 1. cat skills/using-superpowers/SKILL.md   (единственное чтение с диска)               │
+│ 2. escape_for_json() -- чистая bash parameter substitution, без внешних тулов          │
+│ 3. session_context = &lt;EXTREMELY_IMPORTANT&gt; + экранированный текст скилла               │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+                                            ▼
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ if/elif по переменным окружения                                                        │
+│ &lt;- ACL: единственное место в системе, знающее о трёх протоколах активации              │
+└───────────────────────────────────────────────────────────────────────────────────────┘
+
+    CURSOR_PLUGIN_ROOT?          CLAUDE_PLUGIN_ROOT set,          иначе (COPILOT_CLI /
+                                     NOT COPILOT_CLI?                SDK-стандарт)
+             ▼                              ▼                              ▼
+┌─────────────────────────┐    ┌─────────────────────────┐    ┌─────────────────────────┐
+│ additional_context      │    │ hookSpecificOutput.     │    │ additionalContext       │
+│                         │    │ additionalContext       │    │                         │
+└─────────────────────────┘    └─────────────────────────┘    └─────────────────────────┘
+           Cursor                      Claude Code                 Copilot CLI / SDK</pre>
+    </div>
+    <figcaption><span class="k">Рис. 15.</span> Одно чтение диска и одна сборка <code>session_context</code> на весь конвейер — разветвляется только последний шаг. Добавление четвёртого харнесса на Shape A = четвёртая ветка в этом же <code>if/elif</code>, не новый файл. Порт-гайд прямо называет это ловушкой: неверное поле — либо нет инъекции, либо двойная (Claude Code читает оба поля без дедупа).</figcaption>
+  </figure>
+</section>
+
 <section class="takeaways" id="takeaways-sec">
-  <span class="secnum">14 · выводы</span>
+  <span class="secnum">17 · выводы</span>
   <h2>Что унести с собой</h2>
   <ol>
     <li><strong>Промпты — это софт.</strong> Версии, CI через evals, запрет правок без тестов, история создания. Формулировки скиллов — оттюненные веса, их не правят по вкусу.</li>
@@ -1397,7 +1558,7 @@ REPO_ROOT=/tmp/repo[test]  →  не обрезалось  →  корректн
 </section>
 
 <section id="wiki" class="wiki">
-  <span class="secnum">15 · база знаний</span>
+  <span class="secnum">18 · база знаний</span>
   <h2>Wiki: второй мозг проекта</h2>
   <div class="prose">
     <p>Atomic-заметки из <code>Wiki/</code> репозитория — каждая отвечает на один вопрос, все перекрёстно связаны. Порядок чтения с нуля: 00 → 05, дальше — по интересу.</p>
@@ -1563,14 +1724,15 @@ REPO_ROOT=/tmp/repo[test]  →  не обрезалось  →  корректн
   <details id="wiki-08">
     <summary><span class="num">08</span>Харнесс-адаптеры: 11 платформ, один core</summary>
     <div class="note">
-      <p>Ports &amp; Adapters в чистом виде: core — платформо-независимые данные, специфика — в тонких адаптерах (рис. 1).</p>
-      <h4>Три стратегии активации под один контракт</h4>
+      <p>Ports &amp; Adapters в чистом виде: core — платформо-независимые данные, специфика — в тонких адаптерах (рис. 1). <em>Уточнено после аудита <code>docs/porting-to-a-new-harness.md</code> — полный разбор с диаграммами в секции 13.</em></p>
+      <h4>Три канонических Shape + два исключения</h4>
       <ol>
-        <li>hook + JSON (Claude, Cursor, Copilot) — ветвление в одном bash-скрипте;</li>
-        <li>message transform (OpenCode) — JS-плагин с кэшем bootstrap-контента;</li>
-        <li>extension (Pi) — TS; у Pi нативные скиллы, <code>Skill</code> tool не нужен.</li>
+        <li><strong>Shape A</strong> — shell-hook (Claude, Cursor, Copilot) — один и тот же bash (<code>hooks/session-start</code>), ветвится по env, эмитит разный JSON;</li>
+        <li><strong>Shape B</strong> — in-process plugin (OpenCode: JS, Pi: TS) — мутирует message-массив в коде;</li>
+        <li><strong>Shape C</strong> — instructions-file (Gemini: <code>@</code>-include; Antigravity: тот же Shape, но файл ставит инсталлятор);</li>
+        <li><strong>Исключения</strong>: Codex (<code>"hooks": {}</code> намеренно пусто — харнесс сам раскрывает скиллы, инъекция не нужна) и Kimi (своё декларативное поле <code>sessionStart.skill</code> в манифесте — не хук и не код).</li>
       </ol>
-      <p><strong>Словарь инструментов:</strong> OpenCode-адаптер несёт tool mapping (ACL на уровне языка): скиллы написаны в словаре Claude Code, адаптер переводит (<code>Subagent</code> → <code>task</code>, <code>Read files</code> → <code>read</code>…).</p>
+      <p><strong>Словарь инструментов:</strong> OpenCode-адаптер несёт tool mapping (ACL на уровне языка): скиллы написаны в словаре Claude Code, адаптер переводит (<code>Subagent</code> → <code>task</code>, <code>Read files</code> → <code>read</code>…). У Kimi tool-mapping зашит прямо в манифест строкой (<code>skillInstructions</code>), а не вынесен в отдельный файл, как у всех остальных.</p>
       <p><strong>Манифесты</strong> — дубли метаданных в формате каждой платформы; единая версия 6.2.0 транслируется <code>bump-version.sh</code>.</p>
       <p><strong>Критерий настоящей интеграции:</strong> «If you are not sure whether your integration loads the bootstrap at session start, it does not». Отклоняются: копирование скиллов руками, npx-шимы, opt-in per session.</p>
     </div>
